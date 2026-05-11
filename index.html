@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Labor Log — Sekisui | Pasadena</title>
+
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Barlow Condensed', 'sans-serif'],
+            body: ['Barlow', 'sans-serif'],
+          },
+          colors: {
+            steel: {
+              50: '#f0f4f8',
+              100: '#d9e2ec',
+              200: '#bcccdc',
+              300: '#9fb3c8',
+              400: '#829ab1',
+              500: '#627d98',
+              600: '#486581',
+              700: '#334e68',
+              800: '#243b53',
+              900: '#102a43',
+              950: '#0a1929',
+            },
+            amber: {
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Barlow', sans-serif;
+      background-color: #0a1929;
+      color: #d9e2ec;
+      min-height: 100vh;
+    }
+    h1, h2, h3, .font-display { font-family: 'Barlow Condensed', sans-serif; }
+
+    /* ── Texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+    #app { position: relative; z-index: 1; }
+
+    /* ── Inputs ── */
+    .field {
+      background: #102a43;
+      border: 1px solid #334e68;
+      color: #d9e2ec;
+      border-radius: 4px;
+      padding: 0.5rem 0.75rem;
+      width: 100%;
+      font-family: 'Barlow', sans-serif;
+      font-size: 0.95rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field:focus { outline: none; border-color: #fbbf24; box-shadow: 0 0 0 2px rgba(251,191,36,0.2); }
+    .field::placeholder { color: #486581; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      background: #fbbf24;
+      color: #0a1929;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.6rem 1.5rem;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-primary:hover { background: #f59e0b; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { background: #486581; color: #627d98; cursor: not-allowed; }
+
+    .btn-ghost {
+      background: transparent;
+      color: #829ab1;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 600;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      border: 1px solid #334e68;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-ghost:hover { border-color: #829ab1; color: #d9e2ec; }
+
+    .tab-btn {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.6rem 1.25rem;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      color: #627d98;
+      background: transparent;
+      border-top: none; border-left: none; border-right: none;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn.active { color: #fbbf24; border-bottom-color: #fbbf24; }
+    .tab-btn:hover:not(.active) { color: #9fb3c8; }
+
+    /* ── Cards ── */
+    .card {
+      background: #102a43;
+      border: 1px solid #243b53;
+      border-radius: 6px;
+      padding: 1.5rem;
+    }
+
+    /* ── Table ── */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .data-table th {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #627d98;
+      border-bottom: 1px solid #243b53;
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+    }
+    .data-table td {
+      padding: 0.65rem 0.75rem;
+      border-bottom: 1px solid #1a3550;
+      color: #bcccdc;
+      vertical-align: middle;
+    }
+    .data-table tr:hover td { background: rgba(255,255,255,0.03); }
+    .data-table tr:last-child td { border-bottom: none; }
+
+    /* ── Summary grid ── */
+    .summary-grid th {
+      background: #0a1929;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #627d98;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #243b53;
+    }
+    .summary-grid td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #1a3550;
+      font-size: 0.9rem;
+      color: #bcccdc;
+    }
+    .summary-grid tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .hours-cell { color: #fbbf24; font-weight: 600; font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; }
+    .hours-total { color: #f59e0b; font-weight: 800; font-family: 'Barlow Condensed', sans-serif; font-size: 1.05rem; }
+
+    /* ── Status pill ── */
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 99px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      transition: all 0.3s;
+    }
+    .status-pill.idle    { background: #1a3550; color: #627d98; }
+    .status-pill.saving  { background: #1a3a2a; color: #4ade80; }
+    .status-pill.success { background: #1a3a2a; color: #4ade80; }
+    .status-pill.error   { background: #3a1a1a; color: #f87171; }
+
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .dot.pulse { animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── Delete button ── */
+    .del-btn {
+      background: transparent; border: none; cursor: pointer;
+      color: #486581; font-size: 0.85rem; padding: 0.25rem 0.5rem;
+      border-radius: 3px; transition: color 0.15s, background 0.15s;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .del-btn:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+
+    /* ── Loader ── */
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid #334e68; border-top-color: #fbbf24;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Empty state ── */
+    .empty { text-align: center; padding: 3rem 1rem; color: #486581; }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.4; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0a1929; }
+    ::-webkit-scrollbar-thumb { background: #334e68; border-radius: 3px; }
+  </style>
+</head>
+
+<body>
+<div id="app" class="max-w-5xl mx-auto px-4 py-6">
+
+  <!-- ══ HEADER ══ -->
+  <div class="mb-8">
+    <div class="flex items-start justify-between flex-wrap gap-3">
+      <div>
+        <div class="text-xs font-display font-600 tracking-widest text-amber-500 uppercase mb-1">Field Operations</div>
+        <h1 class="text-4xl font-display font-800 tracking-wide text-steel-50 uppercase leading-none">
+          Labor Log
+        </h1>
+        <div class="text-steel-400 font-display text-lg mt-1 tracking-wide">
+          Sekisui &mdash; Pasadena
+        </div>
+      </div>
+      <div class="flex flex-col items-end gap-2">
+        <div id="statusPill" class="status-pill idle">
+          <span class="dot"></span>
+          <span id="statusText">Ready</span>
+        </div>
+        <div class="text-steel-600 text-xs font-display tracking-wider" id="headerDate"></div>
+      </div>
+    </div>
+    <div class="mt-4 h-px bg-gradient-to-r from-amber-500 via-steel-700 to-transparent"></div>
+  </div>
+
+  <!-- ══ CONFIG BANNER (shown if keys are placeholders) ══ -->
+  <div id="configBanner" class="mb-6 p-4 rounded border border-amber-600 bg-amber-900/20 text-amber-300 font-body text-sm hidden">
+    <strong class="font-display tracking-wide">⚠ CONFIGURATION REQUIRED:</strong>
+    Open <code class="bg-black/30 px-1 rounded">index.html</code> and replace 
+    <code class="bg-black/30 px-1 rounded">YOUR_SUPABASE_URL</code> and 
+    <code class="bg-black/30 px-1 rounded">YOUR_SUPABASE_ANON_KEY</code> 
+    at the top of the &lt;script&gt; section with your actual Supabase credentials.
+  </div>
+
+  <!-- ══ TABS ══ -->
+  <div class="flex gap-0 mb-6 border-b border-steel-800">
+    <button class="tab-btn active" onclick="showTab('entry')">Time Entry</button>
+    <button class="tab-btn" onclick="showTab('logs')">Daily Log</button>
+    <button class="tab-btn" onclick="showTab('summary')">Monthly Summary</button>
+  </div>
+
+  <!-- ════════════════════════════════════
+       TAB 1: TIME ENTRY FORM
+  ════════════════════════════════════ -->
+  <div id="tab-entry">
+    <div class="card">
+      <h2 class="font-display text-2xl font-700 tracking-wide text-steel-100 uppercase mb-5">
+        Log Work Hours
+      </h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <!-- Employee Name -->
+        <div class="sm:col-span-1">
+          <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Employee Name</label>
+          <input id="empName" type="text" class="field" placeholder="e.g. John Smith" />
+        </div>
+
+        <!-- Job Number -->
+        <div class="sm:col-span-1">
+          <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Job Number</label>
+          <input id="jobNum" type="text" class="field" placeholder="e.g. SKS-2025-001" />
+        </div>
+
+        <!-- Work Date -->
+        <div class="sm:col-span-1">
+          <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Work Date</label>
+          <input id="workDate" type="date" class="field" />
+        </div>
+
+        <!-- Spacer on wide -->
+        <div class="sm:col-span-1 hidden sm:block"></div>
+
+        <!-- Time In -->
+        <div>
+          <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Time In</label>
+          <input id="timeIn" type="time" class="field" oninput="calcHours()" />
+        </div>
+
+        <!-- Time Out -->
+        <div>
+          <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Time Out</label>
+          <input id="timeOut" type="time" class="field" oninput="calcHours()" />
+        </div>
+
+        <!-- Hours Preview -->
+        <div class="sm:col-span-2">
+          <div class="flex items-center gap-3 p-3 rounded bg-steel-900/50 border border-steel-800">
+            <div class="text-steel-500 font-display text-sm tracking-widest uppercase">Total Hours:</div>
+            <div id="hoursPreview" class="text-amber-400 font-display font-800 text-2xl">—</div>
+            <div id="hoursHint" class="text-steel-600 font-body text-xs ml-2 hidden">hrs (decimal)</div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="sm:col-span-2 flex justify-end pt-2">
+          <button class="btn-primary" onclick="submitEntry()">
+            Submit Entry
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Recent Entries (bottom of entry tab) -->
+    <div class="mt-6">
+      <h3 class="font-display text-lg font-700 tracking-wide text-steel-400 uppercase mb-3">Today's Entries</h3>
+      <div id="todayEntries">
+        <div class="empty"><div class="empty-icon">📋</div><div>No entries yet today</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       TAB 2: DAILY LOG (searchable)
+  ════════════════════════════════════ -->
+  <div id="tab-logs" class="hidden">
+    <div class="flex flex-wrap gap-3 mb-5 items-end">
+      <div class="flex-1 min-w-[180px]">
+        <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Search by Employee or Job #</label>
+        <input id="searchInput" type="text" class="field" placeholder="Type to filter…" oninput="renderLogs()" />
+      </div>
+      <div>
+        <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Filter Date</label>
+        <input id="filterDate" type="date" class="field" style="width:auto;" oninput="renderLogs()" />
+      </div>
+      <button class="btn-ghost" onclick="clearFilters()">Clear</button>
+      <button class="btn-ghost" onclick="loadLogs()"><span id="refreshSpinner" class="hidden spinner mr-1"></span>Refresh</button>
+    </div>
+
+    <div class="card overflow-auto">
+      <table class="data-table" id="logsTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Employee</th>
+            <th>Job #</th>
+            <th>Time In</th>
+            <th>Time Out</th>
+            <th>Hours</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="logsBody">
+          <tr><td colspan="7" class="empty"><div class="empty-icon">⏳</div>Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="logsMeta" class="mt-3 text-steel-600 font-display text-sm tracking-wide"></div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       TAB 3: MONTHLY SUMMARY
+  ════════════════════════════════════ -->
+  <div id="tab-summary" class="hidden">
+    <div class="flex flex-wrap gap-3 mb-5 items-end">
+      <div>
+        <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Month</label>
+        <input id="summaryMonth" type="month" class="field" style="width:auto;" onchange="renderSummary()" />
+      </div>
+      <div>
+        <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Filter Job #</label>
+        <input id="summaryJob" type="text" class="field" placeholder="All jobs" oninput="renderSummary()" style="width:200px;" />
+      </div>
+      <button class="btn-ghost" onclick="loadLogs().then(renderSummary)">Refresh Data</button>
+    </div>
+
+    <div class="card overflow-auto">
+      <div id="summaryContainer">
+        <div class="empty"><div class="empty-icon">📊</div>Loading summary…</div>
+      </div>
+    </div>
+
+    <!-- Totals by employee -->
+    <div class="mt-6">
+      <h3 class="font-display text-xl font-700 tracking-wide text-steel-300 uppercase mb-3">Employee Totals — Month</h3>
+      <div class="card overflow-auto">
+        <div id="empTotalsContainer">
+          <div class="empty text-sm">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────
+//  ⚙ CONFIGURATION — PASTE YOUR KEYS HERE
+// ─────────────────────────────────────────
+const SUPABASE_URL      = 'https://vrdoinopqemwelvaxvsx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyZG9pbm9wcWVtd2VsdmF4dnN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwODgxOTksImV4cCI6MjA5MzY2NDE5OX0.kIjcOCO0bUHHaDTXgetbH8pnKwNA0rmy0YOc4jWKD2E';
+const TABLE_NAME        = 'labor_logs';
+// ─────────────────────────────────────────
+
+const { createClient } = supabase;
+let db = null;
+let allLogs = [];
+
+// ── Init ──────────────────────────────────
+function init() {
+  setStatus('idle', 'Ready');
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+  // Default dates
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('workDate').value = today;
+  document.getElementById('filterDate').value = '';
+  document.getElementById('summaryMonth').value = today.slice(0,7);
+
+  db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  loadLogs().then(() => {
+    renderTodayEntries();
+    renderSummary();
+  });
+}
+
+// ── Status pill ───────────────────────────
+function setStatus(type, text) {
+  const pill = document.getElementById('statusPill');
+  const dot  = pill.querySelector('.dot');
+  pill.className = `status-pill ${type}`;
+  dot.className  = `dot${type === 'saving' ? ' pulse' : ''}`;
+  document.getElementById('statusText').textContent = text;
+}
+
+// ── Tab switching ─────────────────────────
+function showTab(name) {
+  ['entry','logs','summary'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== name);
+  });
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['entry','logs','summary'][i] === name);
+  });
+  if (name === 'logs')    renderLogs();
+  if (name === 'summary') renderSummary();
+}
+
+// ── Hours calculator ──────────────────────
+function calcHours() {
+  const tin  = document.getElementById('timeIn').value;
+  const tout = document.getElementById('timeOut').value;
+  const preview = document.getElementById('hoursPreview');
+  const hint    = document.getElementById('hoursHint');
+  if (!tin || !tout) { preview.textContent = '—'; hint.classList.add('hidden'); return null; }
+  const [h1,m1] = tin.split(':').map(Number);
+  const [h2,m2] = tout.split(':').map(Number);
+  let mins = (h2*60+m2) - (h1*60+m1);
+  if (mins <= 0) { preview.textContent = '⚠ Invalid'; preview.style.color = '#f87171'; hint.classList.add('hidden'); return null; }
+  const hrs = +(mins/60).toFixed(2);
+  preview.textContent = hrs;
+  preview.style.color = '#fbbf24';
+  hint.classList.remove('hidden');
+  return hrs;
+}
+
+// ── Submit entry ──────────────────────────
+async function submitEntry() {
+  if (!db) { alert('Supabase not configured. Check your credentials.'); return; }
+
+  const emp  = document.getElementById('empName').value.trim();
+  const job  = document.getElementById('jobNum').value.trim();
+  const date = document.getElementById('workDate').value;
+  const tin  = document.getElementById('timeIn').value;
+  const tout = document.getElementById('timeOut').value;
+  const hrs  = calcHours();
+
+  if (!emp || !job || !date || !tin || !tout || !hrs) {
+    setStatus('error', 'Missing fields');
+    setTimeout(() => setStatus('idle','Ready'), 3000);
+    return;
+  }
+
+  setStatus('saving', 'Saving…');
+  document.querySelector('button[onclick="submitEntry()"]').disabled = true;
+
+  // Build full timestamps for the work_date
+  const timeInTs  = `${date}T${tin}:00`;
+  const timeOutTs = `${date}T${tout}:00`;
+
+  const { error } = await db.from(TABLE_NAME).insert([{
+    employee_name: emp,
+    job_number:    job,
+    work_date:     date,
+    time_in:       timeInTs,
+    time_out:      timeOutTs,
+    total_hours:   hrs
+  }]);
+
+  document.querySelector('button[onclick="submitEntry()"]').disabled = false;
+
+  if (error) {
+    console.error(error);
+    setStatus('error', 'Save failed');
+    setTimeout(() => setStatus('idle','Ready'), 4000);
+  } else {
+    setStatus('success', 'Saved ✓');
+    setTimeout(() => setStatus('idle','Ready'), 3000);
+    // Clear time fields only, keep name/job/date for quick re-entry
+    document.getElementById('timeIn').value = '';
+    document.getElementById('timeOut').value = '';
+    document.getElementById('hoursPreview').textContent = '—';
+    document.getElementById('hoursHint').classList.add('hidden');
+    await loadLogs();
+    renderTodayEntries();
+  }
+}
+
+// ── Load all logs from Supabase ───────────
+async function loadLogs() {
+  if (!db) return;
+  document.getElementById('refreshSpinner').classList.remove('hidden');
+  const { data, error } = await db
+    .from(TABLE_NAME)
+    .select('*')
+    .order('work_date', { ascending: false })
+    .order('time_in',   { ascending: false });
+  document.getElementById('refreshSpinner').classList.add('hidden');
+  if (!error && data) { allLogs = data; }
+  else console.error(error);
+}
+
+// ── Render today's entries (entry tab) ────
+function renderTodayEntries() {
+  const today = new Date().toISOString().split('T')[0];
+  const rows  = allLogs.filter(r => r.work_date === today);
+  const el    = document.getElementById('todayEntries');
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div>No entries yet today</div></div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="card overflow-auto">
+      <table class="data-table">
+        <thead><tr><th>Employee</th><th>Job #</th><th>In</th><th>Out</th><th>Hrs</th></tr></thead>
+        <tbody>
+          ${rows.map(r=>`
+            <tr>
+              <td>${esc(r.employee_name)}</td>
+              <td><span class="text-amber-400 font-display font-600">${esc(r.job_number)}</span></td>
+              <td>${fmtTime(r.time_in)}</td>
+              <td>${fmtTime(r.time_out)}</td>
+              <td class="hours-cell">${(+r.total_hours).toFixed(2)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── Render logs table ─────────────────────
+function renderLogs() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const dateF  = document.getElementById('filterDate').value;
+  let rows = allLogs;
+  if (search) rows = rows.filter(r =>
+    r.employee_name.toLowerCase().includes(search) ||
+    r.job_number.toLowerCase().includes(search));
+  if (dateF) rows = rows.filter(r => r.work_date === dateF);
+
+  const tbody = document.getElementById('logsBody');
+  const meta  = document.getElementById('logsMeta');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">🔍</div><div>No records found</div></div></td></tr>`;
+    meta.textContent = '';
+    return;
+  }
+  const total = rows.reduce((s,r) => s + (+r.total_hours||0), 0);
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td class="text-steel-300">${r.work_date}</td>
+      <td class="font-500">${esc(r.employee_name)}</td>
+      <td><span class="text-amber-400 font-display font-600 text-sm">${esc(r.job_number)}</span></td>
+      <td class="text-steel-400">${fmtTime(r.time_in)}</td>
+      <td class="text-steel-400">${fmtTime(r.time_out)}</td>
+      <td class="hours-cell">${(+r.total_hours).toFixed(2)}</td>
+      <td><button class="del-btn" onclick="deleteLog('${r.id}')">Delete</button></td>
+    </tr>`).join('');
+  meta.textContent = `${rows.length} record${rows.length!==1?'s':''} · Total: ${total.toFixed(2)} hrs`;
+}
+
+function clearFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterDate').value  = '';
+  renderLogs();
+}
+
+// ── Delete log ────────────────────────────
+async function deleteLog(id) {
+  if (!confirm('Delete this entry?')) return;
+  setStatus('saving','Deleting…');
+  const { error } = await db.from(TABLE_NAME).delete().eq('id', id);
+  if (error) { setStatus('error','Delete failed'); setTimeout(()=>setStatus('idle','Ready'),3000); }
+  else {
+    setStatus('success','Deleted ✓');
+    setTimeout(()=>setStatus('idle','Ready'),2000);
+    await loadLogs();
+    renderLogs();
+    renderTodayEntries();
+    renderSummary();
+  }
+}
+
+// ── Monthly Summary ───────────────────────
+function renderSummary() {
+  const monthVal = document.getElementById('summaryMonth').value; // "YYYY-MM"
+  const jobFilter = document.getElementById('summaryJob').value.trim().toLowerCase();
+  if (!monthVal) return;
+
+  const [yr, mo] = monthVal.split('-').map(Number);
+  // Filter to this month
+  let rows = allLogs.filter(r => {
+    const d = new Date(r.work_date + 'T00:00:00');
+    return d.getFullYear() === yr && d.getMonth()+1 === mo;
+  });
+  if (jobFilter) rows = rows.filter(r => r.job_number.toLowerCase().includes(jobFilter));
+
+  // Weeks: 1-7, 8-14, 15-21, 22-end
+  const weekOf = d => {
+    const day = new Date(d + 'T00:00:00').getDate();
+    if (day <= 7)  return 0;
+    if (day <= 14) return 1;
+    if (day <= 21) return 2;
+    return 3;
+  };
+
+  // Group by job number
+  const jobs = {};
+  rows.forEach(r => {
+    const j = r.job_number;
+    if (!jobs[j]) jobs[j] = [0,0,0,0];
+    jobs[j][weekOf(r.work_date)] += +r.total_hours || 0;
+  });
+
+  const container = document.getElementById('summaryContainer');
+  if (!Object.keys(jobs).length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">📊</div><div>No data for ${monthVal}</div></div>`;
+    renderEmpTotals([], yr, mo);
+    return;
+  }
+
+  const monthName = new Date(yr, mo-1, 1).toLocaleString('en-US',{month:'long', year:'numeric'});
+  const weekLabels = ['Week 1 (1–7)','Week 2 (8–14)','Week 3 (15–21)','Week 4+ (22–end)'];
+
+  let html = `
+    <div class="font-display text-lg font-700 tracking-wide text-steel-300 uppercase mb-4">
+      ${monthName}
+    </div>
+    <table class="summary-grid w-full">
+      <thead>
+        <tr>
+          <th>Job #</th>
+          ${weekLabels.map(w=>`<th>${w}</th>`).join('')}
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  let grandWeeks = [0,0,0,0];
+  Object.entries(jobs).sort().forEach(([job, weeks]) => {
+    const tot = weeks.reduce((a,b)=>a+b,0);
+    weeks.forEach((v,i)=>grandWeeks[i]+=v);
+    html += `<tr>
+      <td class="font-display font-600 text-amber-400">${esc(job)}</td>
+      ${weeks.map(v=>`<td class="${v>0?'hours-cell':''}">${v>0?v.toFixed(2):'—'}</td>`).join('')}
+      <td class="hours-total">${tot.toFixed(2)}</td>
+    </tr>`;
+  });
+
+  const grandTotal = grandWeeks.reduce((a,b)=>a+b,0);
+  html += `
+      <tr style="border-top:2px solid #334e68;">
+        <td class="font-display font-700 text-steel-300 uppercase text-sm">TOTAL</td>
+        ${grandWeeks.map(v=>`<td class="hours-total">${v>0?v.toFixed(2):'—'}</td>`).join('')}
+        <td class="hours-total" style="color:#f59e0b;">${grandTotal.toFixed(2)}</td>
+      </tr>
+    </tbody></table>`;
+
+  container.innerHTML = html;
+  renderEmpTotals(rows, yr, mo);
+}
+
+function renderEmpTotals(rows, yr, mo) {
+  const emps = {};
+  rows.forEach(r => {
+    if (!emps[r.employee_name]) emps[r.employee_name] = 0;
+    emps[r.employee_name] += +r.total_hours || 0;
+  });
+  const el = document.getElementById('empTotalsContainer');
+  if (!Object.keys(emps).length) {
+    el.innerHTML = `<div class="empty text-sm">No employee data</div>`;
+    return;
+  }
+  el.innerHTML = `
+    <table class="summary-grid w-full">
+      <thead><tr><th>Employee</th><th>Total Hours</th></tr></thead>
+      <tbody>
+        ${Object.entries(emps).sort((a,b)=>b[1]-a[1]).map(([n,h])=>`
+          <tr>
+            <td class="font-500 text-steel-200">${esc(n)}</td>
+            <td class="hours-cell">${h.toFixed(2)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Helpers ───────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  if (isNaN(d)) return ts;
+  return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+}
+
+// ── Boot ──────────────────────────────────
+init();
+</script>
+</body>
+</html>
