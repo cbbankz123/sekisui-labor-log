@@ -312,7 +312,8 @@
 // ── CONFIG ────────────────────────────────
 const SUPABASE_URL      = 'https://vrdoinopqemwelvaxvsx.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyZG9pbm9wcWVtd2VsdmF4dnN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwODgxOTksImV4cCI6MjA5MzY2NDE5OX0.kIjcOCO0bUHHaDTXgetbH8pnKwNA0rmy0YOc4jWKD2E';
-const TABLE = 'labor_logs';
+const TABLE    = 'labor_logs';
+const TZ       = 'America/Chicago';   // ← Pasadena TX = Central Time
 // ─────────────────────────────────────────
 
 const { createClient } = supabase;
@@ -326,6 +327,88 @@ let jobNumbers = [];
 let pendingClockOutId = null;
 let pendingEditId     = null;
 let pendingEditDate   = null;
+
+// ── TIMEZONE UTILITIES (all times anchored to Central) ────────────────────────
+
+// Returns current time as a Date object (JS Date is always UTC internally,
+// but we read the wall-clock time in Central to build it correctly)
+function nowCentral() {
+  return new Date();  // Date.now() is always UTC — no conversion needed
+}
+
+// Returns today's date string "YYYY-MM-DD" in Central time
+function localDateStr(d) {
+  var base = d || new Date();
+  var parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ, year:'numeric', month:'2-digit', day:'2-digit'
+  }).formatToParts(base);
+  var p = {};
+  parts.forEach(function(x){ p[x.type]=x.value; });
+  return p.year+'-'+p.month+'-'+p.day;
+}
+
+// Returns "HH:MM" in Central time for a given Date (for pre-filling time inputs)
+function dateToTimeInput(d) {
+  var parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ, hour:'2-digit', minute:'2-digit', hour12:false
+  }).formatToParts(d);
+  var p = {};
+  parts.forEach(function(x){ p[x.type]=x.value; });
+  // hour12:false can give "24" for midnight — normalize
+  var h = p.hour === '24' ? '00' : p.hour;
+  return h+':'+p.minute;
+}
+
+// Converts a date string "YYYY-MM-DD" + time string "HH:MM" 
+// into a UTC ISO string, treating the input as Central time
+function centralToISO(dateStr, timeStr) {
+  // We need to find the UTC equivalent of this Central wall-clock time.
+  // Strategy: format a known UTC date into Central, binary-search for the offset.
+  // Simpler: use the fact that Intl can tell us the offset.
+  var approx = new Date(dateStr + 'T' + timeStr + ':00Z');  // treat as UTC first
+  // Now adjust: find what Central time that UTC moment corresponds to
+  var centralStr = new Intl.DateTimeFormat('sv-SE', {  // sv-SE gives YYYY-MM-DD HH:MM:SS
+    timeZone: TZ, year:'numeric', month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', second:'2-digit'
+  }).format(approx);
+  // centralStr = "2026-05-11 14:30:00"
+  // We want the UTC time that gives us dateStr+timeStr in Central.
+  // Diff = approx (UTC) displayed as Central vs what we want
+  var displayedParts = centralStr.replace('T',' ').split(/[- :]/);
+  var displayedDate = displayedParts[0]+'-'+displayedParts[1]+'-'+displayedParts[2];
+  var displayedTime = displayedParts[3]+':'+displayedParts[4];
+  // How many minutes off is the UTC guess from what we want?
+  var wantMins  = timeToMins(timeStr);
+  var gotMins   = timeToMins(displayedTime);
+  var dateDiff  = (new Date(dateStr+'T00:00:00Z') - new Date(displayedDate+'T00:00:00Z')) / 60000;
+  var diffMins  = (wantMins - gotMins) - dateDiff;
+  // Shift the UTC time by the difference
+  return new Date(approx.getTime() + diffMins * 60000).toISOString();
+}
+
+function timeToMins(hhmm) {
+  var p = hhmm.split(':');
+  return parseInt(p[0])*60 + parseInt(p[1]);
+}
+
+// Format a UTC timestamp string for display in Central time
+function fmtTime(ts) {
+  if (!ts) return '--';
+  var d = new Date(ts);
+  if (isNaN(d)) return ts;
+  return d.toLocaleTimeString('en-US', {
+    timeZone: TZ, hour:'numeric', minute:'2-digit', hour12:true
+  });
+}
+
+// Elapsed time string from a UTC timestamp to now
+function elapsedStr(timeIn) {
+  if (!timeIn) return '';
+  var mins = Math.floor((Date.now() - new Date(timeIn)) / 60000);
+  if (mins < 0) mins = 0;
+  if (mins < 60) return mins+'m on site';
+  return Math.floor(mins/60)+'h '+mins%60+'m on site';
+}
 
 // ── INIT ──────────────────────────────────
 function init() {
@@ -344,10 +427,7 @@ function init() {
   loadAll();
 }
 
-function localDateStr(d) {
-  d = d || new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
+// localDateStr is defined in timezone utilities above
 
 // ── DATA ──────────────────────────────────
 async function loadAll() {
@@ -454,7 +534,8 @@ async function clockIn() {
   }
   setStatus('saving','Saving...');
   document.getElementById('clockInBtn').disabled = true;
-  var timeInTs = tin ? (date+'T'+tin+':00') : new Date().toISOString();
+  // Always anchor timestamps to Central time
+  var timeInTs = tin ? centralToISO(date, tin) : new Date().toISOString();
   // Query Supabase live for open sessions — never rely on stale cache for this
   var openRes = await db.from(TABLE).select('*').ilike('employee_name', emp).is('time_out', null);
   if (openRes.data && openRes.data.length > 0) {
@@ -484,11 +565,8 @@ function clockOut(id) {
   var rec = allLogs.find(function(r){ return r.id===id; });
   if (!rec) return;
   pendingClockOutId = id;
-  // Default to current time
-  var now = new Date();
-  var hh  = String(now.getHours()).padStart(2,'0');
-  var mm  = String(now.getMinutes()).padStart(2,'0');
-  document.getElementById('coModalTime').value = hh+':'+mm;
+  // Default to current Central time
+  document.getElementById('coModalTime').value = dateToTimeInput(new Date());
   document.getElementById('coModalSub').textContent =
     rec.employee_name+' — '+rec.job_number+' (in at '+fmtTime(rec.time_in)+')';
   updateClockOutPreview();
@@ -502,8 +580,9 @@ function updateClockOutPreview() {
   var prev = document.getElementById('coModalHrsPreview');
   if (!rec || !tval) { prev.textContent='--'; return; }
   var tin  = new Date(rec.time_in);
-  var date = rec.work_date;
-  var tout = new Date(date+'T'+tval+':00');
+  var outIso = centralToISO(rec.work_date, tval);
+  var tout = new Date(outIso);
+  if (tout <= tin) tout = new Date(tout.getTime() + 86400000);
   var hrs  = Math.max(0,((tout-tin)/3600000));
   if (isNaN(hrs)) { prev.textContent='Invalid time'; return; }
   prev.innerHTML = '<span style="color:#fbbf24;font-size:1.4rem;font-weight:800;">'+hrs.toFixed(2)+'</span> <span style="color:#627d98">hrs calculated</span>';
@@ -513,11 +592,17 @@ async function confirmClockOut() {
   var rec  = allLogs.find(function(r){ return r.id===pendingClockOutId; });
   var tval = document.getElementById('coModalTime').value;
   if (!rec || !tval) return;
-  // Build a proper local Date so UTC conversion is correct
-  var outTs = new Date(rec.work_date+'T'+tval+':00');
+  // Build clock-out in Central time using the work_date
+  var outIso = centralToISO(rec.work_date, tval);
+  // If clock-out ended up before clock-in (day rollover edge case), add 24hrs
+  if (new Date(outIso) <= new Date(rec.time_in)) {
+    var d = new Date(rec.work_date+'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate()+1);
+    outIso = centralToISO(localDateStr(d), tval);
+  }
   closeModal('clockOutModal');
   setStatus('saving','Saving...');
-  await clockOutRecord(rec, outTs.toISOString());
+  await clockOutRecord(rec, outIso);
   setStatus('success','Clocked Out');
   setTimeout(function(){setStatus('idle','Ready');},2500);
   await loadAll();
@@ -540,8 +625,7 @@ function editEntry(id) {
 
 function tsToTimeInput(ts) {
   if (!ts) return '';
-  var d = new Date(ts);
-  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  return dateToTimeInput(new Date(ts));  // uses Central timezone
 }
 
 function updateEditPreview() {
@@ -549,8 +633,9 @@ function updateEditPreview() {
   var outVal = document.getElementById('editTimeOut').value;
   var prev   = document.getElementById('editHrsPreview');
   if (!inVal || !outVal || !pendingEditDate) { prev.textContent='--'; return; }
-  var tin  = new Date(pendingEditDate+'T'+inVal+':00');
-  var tout = new Date(pendingEditDate+'T'+outVal+':00');
+  var tin  = new Date(centralToISO(pendingEditDate, inVal));
+  var tout = new Date(centralToISO(pendingEditDate, outVal));
+  if (tout <= tin) tout = new Date(tout.getTime() + 86400000);
   var hrs  = Math.max(0,(tout-tin)/3600000);
   if (isNaN(hrs)) { prev.textContent='Invalid'; return; }
   prev.innerHTML = '<span style="color:#fbbf24;font-size:1.4rem;font-weight:800;">'+hrs.toFixed(2)+'</span> <span style="color:#627d98">hrs — In: '+fmtTimeStr(inVal)+' &rarr; Out: '+fmtTimeStr(outVal)+'</span>';
@@ -569,12 +654,13 @@ async function confirmEdit() {
   var inVal  = document.getElementById('editTimeIn').value;
   var outVal = document.getElementById('editTimeOut').value;
   if (!pendingEditId || !inVal || !outVal) return;
-  var tin  = new Date(pendingEditDate+'T'+inVal+':00');
-  var tout = new Date(pendingEditDate+'T'+outVal+':00');
+  // Build timestamps in Central time
+  var tin  = new Date(centralToISO(pendingEditDate, inVal));
+  var tout = new Date(centralToISO(pendingEditDate, outVal));
+  if (tout <= tin) tout = new Date(tout.getTime() + 86400000);
   var hrs  = Math.max(0,+((tout-tin)/3600000).toFixed(2));
   closeModal('editModal');
   setStatus('saving','Saving...');
-  // Use .toISOString() so Supabase always gets UTC regardless of browser timezone
   var res = await db.from(TABLE).update({
     time_in:     tin.toISOString(),
     time_out:    tout.toISOString(),
@@ -657,12 +743,7 @@ function renderActiveWorkers() {
   }).join('');
 }
 
-function elapsedStr(timeIn) {
-  if (!timeIn) return '';
-  var mins = Math.floor((Date.now()-new Date(timeIn))/60000);
-  if (mins<60) return mins+'m on site';
-  return Math.floor(mins/60)+'h '+mins%60+'m on site';
-}
+// elapsedStr is defined in timezone utilities above
 
 // ── RENDER: TODAY ENTRIES ─────────────────
 function renderTodayEntries() {
@@ -784,13 +865,7 @@ function renderEmpTotals(rows) {
 // ── HELPERS ───────────────────────────────
 function esc(s)     { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(s) { return esc(s).replace(/'/g,'&#39;'); }
-
-function fmtTime(ts) {
-  if (!ts) return '--';
-  var d=new Date(ts);
-  if(isNaN(d))return ts;
-  return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
-}
+// fmtTime and elapsedStr are defined in timezone utilities above
 
 // ── BOOT ──────────────────────────────────
 init();
