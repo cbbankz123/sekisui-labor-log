@@ -455,8 +455,13 @@ async function clockIn() {
   setStatus('saving','Saving...');
   document.getElementById('clockInBtn').disabled = true;
   var timeInTs = tin ? (date+'T'+tin+':00') : new Date().toISOString();
-  var open = allLogs.find(function(r){ return r.employee_name.toLowerCase()===emp.toLowerCase() && !r.time_out; });
-  if (open) await clockOutRecord(open, timeInTs);
+  // Query Supabase live for open sessions — never rely on stale cache for this
+  var openRes = await db.from(TABLE).select('*').ilike('employee_name', emp).is('time_out', null);
+  if (openRes.data && openRes.data.length > 0) {
+    for (var oi=0; oi<openRes.data.length; oi++) {
+      await clockOutRecord(openRes.data[oi], timeInTs);
+    }
+  }
   var res = await db.from(TABLE).insert([{
     employee_name:emp, job_number:job, work_date:date,
     time_in:timeInTs, time_out:null, total_hours:null
@@ -508,10 +513,11 @@ async function confirmClockOut() {
   var rec  = allLogs.find(function(r){ return r.id===pendingClockOutId; });
   var tval = document.getElementById('coModalTime').value;
   if (!rec || !tval) return;
-  var outTs = rec.work_date+'T'+tval+':00';
+  // Build a proper local Date so UTC conversion is correct
+  var outTs = new Date(rec.work_date+'T'+tval+':00');
   closeModal('clockOutModal');
   setStatus('saving','Saving...');
-  await clockOutRecord(rec, outTs);
+  await clockOutRecord(rec, outTs.toISOString());
   setStatus('success','Clocked Out');
   setTimeout(function(){setStatus('idle','Ready');},2500);
   await loadAll();
@@ -568,9 +574,10 @@ async function confirmEdit() {
   var hrs  = Math.max(0,+((tout-tin)/3600000).toFixed(2));
   closeModal('editModal');
   setStatus('saving','Saving...');
+  // Use .toISOString() so Supabase always gets UTC regardless of browser timezone
   var res = await db.from(TABLE).update({
-    time_in:    tin.toISOString(),
-    time_out:   tout.toISOString(),
+    time_in:     tin.toISOString(),
+    time_out:    tout.toISOString(),
     total_hours: hrs
   }).eq('id', pendingEditId);
   if (res.error) {
@@ -585,11 +592,26 @@ async function confirmEdit() {
 
 // ── LOW-LEVEL CLOCK OUT ───────────────────
 async function clockOutRecord(rec, outTime) {
-  var tout = new Date(outTime || Date.now());
-  var tin  = new Date(rec.time_in);
-  var hrs  = Math.max(0,+((tout-tin)/3600000).toFixed(2));
-  var res  = await db.from(TABLE).update({ time_out:tout.toISOString(), total_hours:hrs }).eq('id',rec.id);
-  if (res.error) console.error(res.error);
+  // Always use ISO string for Supabase — avoids local-time/UTC mismatch
+  var tout;
+  if (outTime) {
+    // If passed a local datetime string like "2026-05-11T14:30:00", parse carefully
+    tout = (typeof outTime === 'string' && !outTime.endsWith('Z'))
+      ? new Date(outTime)   // JS parses local ISO as local time
+      : new Date(outTime);
+  } else {
+    tout = new Date();
+  }
+  var tin = new Date(rec.time_in);
+  var hrs = Math.max(0, +((tout - tin) / 3600000).toFixed(2));
+  var res = await db.from(TABLE)
+    .update({ time_out: tout.toISOString(), total_hours: hrs })
+    .eq('id', rec.id);
+  if (res.error) {
+    console.error('clockOutRecord error:', res.error);
+    return false;
+  }
+  return true;
 }
 
 // ── CLOCK OUT ALL ─────────────────────────
