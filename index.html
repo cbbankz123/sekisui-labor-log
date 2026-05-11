@@ -309,11 +309,10 @@
 </div><!-- /app -->
 
 <script>
-// ── CONFIG ────────────────────────────────
+// ── CONFIG ───────────────────────────────
 const SUPABASE_URL      = 'https://vrdoinopqemwelvaxvsx.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyZG9pbm9wcWVtd2VsdmF4dnN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwODgxOTksImV4cCI6MjA5MzY2NDE5OX0.kIjcOCO0bUHHaDTXgetbH8pnKwNA0rmy0YOc4jWKD2E';
-const TABLE    = 'labor_logs';
-const TZ       = 'America/Chicago';   // ← Pasadena TX = Central Time
+const TABLE = 'labor_logs';
 // ─────────────────────────────────────────
 
 const { createClient } = supabase;
@@ -322,103 +321,106 @@ const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let allLogs    = [];
 let empNames   = [];
 let jobNumbers = [];
-
-// Modal state
 let pendingClockOutId = null;
 let pendingEditId     = null;
 let pendingEditDate   = null;
 
-// ── TIMEZONE UTILITIES (all times anchored to Central) ────────────────────────
+// ── SIMPLE TIME HELPERS ──────────────────
+// We store timestamps as "YYYY-MM-DD HH:MM:SS" strings (no timezone).
+// Hours = simple subtraction of HH:MM values. No UTC, no Intl, no conversions.
 
-// Returns current time as a Date object (JS Date is always UTC internally,
-// but we read the wall-clock time in Central to build it correctly)
-function nowCentral() {
-  return new Date();  // Date.now() is always UTC — no conversion needed
+function todayStr() {
+  var d = new Date();
+  // Use the device clock — workers are in Central time so device should be too
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
 }
 
-// Returns today's date string "YYYY-MM-DD" in Central time
-function localDateStr(d) {
-  var base = d || new Date();
-  var parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: TZ, year:'numeric', month:'2-digit', day:'2-digit'
-  }).formatToParts(base);
-  var p = {};
-  parts.forEach(function(x){ p[x.type]=x.value; });
-  return p.year+'-'+p.month+'-'+p.day;
+function nowTimeStr() {
+  var d = new Date();
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 }
 
-// Returns "HH:MM" in Central time for a given Date (for pre-filling time inputs)
-function dateToTimeInput(d) {
-  var parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: TZ, hour:'2-digit', minute:'2-digit', hour12:false
-  }).formatToParts(d);
-  var p = {};
-  parts.forEach(function(x){ p[x.type]=x.value; });
-  // hour12:false can give "24" for midnight — normalize
-  var h = p.hour === '24' ? '00' : p.hour;
-  return h+':'+p.minute;
+// Build a plain timestamp string "YYYY-MM-DD HH:MM:SS"
+function makeTS(dateStr, timeStr) {
+  return dateStr + ' ' + timeStr + ':00';
 }
 
-// Converts a date string "YYYY-MM-DD" + time string "HH:MM" 
-// into a UTC ISO string, treating the input as Central time
-function centralToISO(dateStr, timeStr) {
-  // We need to find the UTC equivalent of this Central wall-clock time.
-  // Strategy: format a known UTC date into Central, binary-search for the offset.
-  // Simpler: use the fact that Intl can tell us the offset.
-  var approx = new Date(dateStr + 'T' + timeStr + ':00Z');  // treat as UTC first
-  // Now adjust: find what Central time that UTC moment corresponds to
-  var centralStr = new Intl.DateTimeFormat('sv-SE', {  // sv-SE gives YYYY-MM-DD HH:MM:SS
-    timeZone: TZ, year:'numeric', month:'2-digit', day:'2-digit',
-    hour:'2-digit', minute:'2-digit', second:'2-digit'
-  }).format(approx);
-  // centralStr = "2026-05-11 14:30:00"
-  // We want the UTC time that gives us dateStr+timeStr in Central.
-  // Diff = approx (UTC) displayed as Central vs what we want
-  var displayedParts = centralStr.replace('T',' ').split(/[- :]/);
-  var displayedDate = displayedParts[0]+'-'+displayedParts[1]+'-'+displayedParts[2];
-  var displayedTime = displayedParts[3]+':'+displayedParts[4];
-  // How many minutes off is the UTC guess from what we want?
-  var wantMins  = timeToMins(timeStr);
-  var gotMins   = timeToMins(displayedTime);
-  var dateDiff  = (new Date(dateStr+'T00:00:00Z') - new Date(displayedDate+'T00:00:00Z')) / 60000;
-  var diffMins  = (wantMins - gotMins) - dateDiff;
-  // Shift the UTC time by the difference
-  return new Date(approx.getTime() + diffMins * 60000).toISOString();
+// Calculate decimal hours between two "YYYY-MM-DD HH:MM:SS" strings
+function calcHours(tsIn, tsOut) {
+  // Strip seconds, split on space
+  var inParts  = tsIn.replace(':00','').split(' ');   // ["2026-05-11","07:00"]
+  var outParts = tsOut.replace(':00','').split(' ');
+  var inMins   = hmToMins(inParts[1]);
+  var outMins  = hmToMins(outParts[1]);
+  var diff = outMins - inMins;
+  // Handle overnight
+  if (diff < 0) diff += 1440;
+  return Math.round(diff) / 60;
 }
 
-function timeToMins(hhmm) {
+function hmToMins(hhmm) {
   var p = hhmm.split(':');
-  return parseInt(p[0])*60 + parseInt(p[1]);
+  return parseInt(p[0]) * 60 + parseInt(p[1]);
 }
 
-// Format a UTC timestamp string for display in Central time
+// Format a stored timestamp for display: "7:00 AM"
 function fmtTime(ts) {
   if (!ts) return '--';
-  var d = new Date(ts);
-  if (isNaN(d)) return ts;
-  return d.toLocaleTimeString('en-US', {
-    timeZone: TZ, hour:'numeric', minute:'2-digit', hour12:true
-  });
+  // ts = "2026-05-11 07:00:00" or ISO string
+  var timepart = '';
+  if (ts.includes('T')) {
+    // ISO string from Supabase — extract time portion and display as-is
+    // These old records were stored with timezone offset baked in
+    // Just show HH:MM from the raw string
+    var t = ts.split('T')[1].substring(0,5);
+    timepart = t;
+  } else if (ts.includes(' ')) {
+    timepart = ts.split(' ')[1].substring(0,5);
+  } else {
+    return ts;
+  }
+  // Convert "HH:MM" to "H:MM AM/PM"
+  var h = parseInt(timepart.split(':')[0]);
+  var m = timepart.split(':')[1];
+  var ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return h + ':' + m + ' ' + ampm;
 }
 
-// Elapsed time string from a UTC timestamp to now
-function elapsedStr(timeIn) {
-  if (!timeIn) return '';
-  var mins = Math.floor((Date.now() - new Date(timeIn)) / 60000);
-  if (mins < 0) mins = 0;
-  if (mins < 60) return mins+'m on site';
-  return Math.floor(mins/60)+'h '+mins%60+'m on site';
+// Elapsed time from a stored timestamp to now
+function elapsedStr(tsIn) {
+  if (!tsIn) return '';
+  var timepart = '';
+  if (tsIn.includes('T')) {
+    timepart = tsIn.split('T')[1].substring(0,5);
+  } else if (tsIn.includes(' ')) {
+    timepart = tsIn.split(' ')[1].substring(0,5);
+  } else { return ''; }
+  var inMins  = hmToMins(timepart);
+  var nowMins = hmToMins(nowTimeStr());
+  var diff = nowMins - inMins;
+  if (diff < 0) diff += 1440;
+  if (diff < 60) return diff + 'm on site';
+  return Math.floor(diff/60) + 'h ' + (diff%60) + 'm on site';
 }
 
-// ── INIT ──────────────────────────────────
+// Extract "HH:MM" from a stored timestamp
+function tsToHHMM(ts) {
+  if (!ts) return '';
+  if (ts.includes('T')) return ts.split('T')[1].substring(0,5);
+  if (ts.includes(' ')) return ts.split(' ')[1].substring(0,5);
+  return '';
+}
+
+// ── INIT ─────────────────────────────────
 function init() {
   setStatus('idle','Ready');
   document.getElementById('headerDate').textContent =
     new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const today = localDateStr();
-  document.getElementById('workDate').value     = today;
-  document.getElementById('summaryMonth').value = today.slice(0,7);
-  // Close modals on backdrop click
+  document.getElementById('workDate').value     = todayStr();
+  document.getElementById('summaryMonth').value = todayStr().slice(0,7);
   ['clockOutModal','editModal'].forEach(function(id) {
     document.getElementById(id).addEventListener('click', function(e) {
       if (e.target === this) closeModal(id);
@@ -427,17 +429,21 @@ function init() {
   loadAll();
 }
 
-// localDateStr is defined in timezone utilities above
-
-// ── DATA ──────────────────────────────────
+// ── DATA ─────────────────────────────────
 async function loadAll() {
-  ['refreshSpinner','activeSpinner'].forEach(function(id){ document.getElementById(id).classList.remove('hidden'); });
-  var res = await db.from(TABLE).select('*').order('work_date',{ascending:false}).order('time_in',{ascending:false});
-  ['refreshSpinner','activeSpinner'].forEach(function(id){ document.getElementById(id).classList.add('hidden'); });
+  ['refreshSpinner','activeSpinner'].forEach(function(id){
+    document.getElementById(id).classList.remove('hidden');
+  });
+  var res = await db.from(TABLE).select('*')
+    .order('work_date',{ascending:false})
+    .order('time_in',{ascending:false});
+  ['refreshSpinner','activeSpinner'].forEach(function(id){
+    document.getElementById(id).classList.add('hidden');
+  });
   if (res.error) { console.error(res.error); return; }
   allLogs    = res.data || [];
-  empNames   = [...new Set(allLogs.map(function(r){return r.employee_name}))].sort();
-  jobNumbers = [...new Set(allLogs.map(function(r){return r.job_number}))].sort();
+  empNames   = [...new Set(allLogs.map(function(r){return r.employee_name;}))].sort();
+  jobNumbers = [...new Set(allLogs.map(function(r){return r.job_number;}))].sort();
   updateActiveBadge();
   renderActiveWorkers();
   renderTodayEntries();
@@ -445,15 +451,15 @@ async function loadAll() {
   renderSummary();
 }
 
-// ── STATUS ────────────────────────────────
+// ── STATUS ───────────────────────────────
 function setStatus(type, text) {
   var pill = document.getElementById('statusPill');
-  pill.className = 'status-pill '+type;
-  pill.querySelector('.dot').className = 'dot'+(type==='saving'?' pulse':'');
+  pill.className = 'status-pill ' + type;
+  pill.querySelector('.dot').className = 'dot' + (type==='saving' ? ' pulse' : '');
   document.getElementById('statusText').textContent = text;
 }
 
-// ── TABS ──────────────────────────────────
+// ── TABS ─────────────────────────────────
 function showTab(name) {
   ['clockin','active','logs','summary'].forEach(function(t){
     document.getElementById('tab-'+t).classList.toggle('hidden', t!==name);
@@ -463,11 +469,11 @@ function showTab(name) {
   });
 }
 
-// ── MODALS ────────────────────────────────
+// ── MODALS ───────────────────────────────
 function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-// ── AUTOCOMPLETE (generic) ────────────────
+// ── AUTOCOMPLETE ─────────────────────────
 var acIndexes = {};
 
 function acFilter(inputId, listId, source, selectFn) {
@@ -479,7 +485,7 @@ function acFilter(inputId, listId, source, selectFn) {
   if (!matches.length) { closeAC(listId); return; }
   var list = document.getElementById(listId);
   list.innerHTML = matches.map(function(n,i){
-    return '<li data-idx="'+i+'" onmousedown="'+selectFn+'(\''+escAttr(n)+'\')">'+esc(n)+'</li>';
+    return '<li data-idx="'+i+'" onmousedown="'+selectFn+'(''+escAttr(n)+'')">'+esc(n)+'</li>';
   }).join('');
   list.classList.remove('hidden');
 }
@@ -489,13 +495,15 @@ function acKey(e, listId, source, selectFn) {
   var items = list.querySelectorAll('li');
   if (!items.length) return;
   var idx = acIndexes[listId] || -1;
-  if (e.key==='ArrowDown') { idx=Math.min(idx+1,items.length-1); acIndexes[listId]=idx; acHighlight(items,idx); e.preventDefault(); }
-  else if (e.key==='ArrowUp') { idx=Math.max(idx-1,0); acIndexes[listId]=idx; acHighlight(items,idx); e.preventDefault(); }
+  if (e.key==='ArrowDown')      { idx=Math.min(idx+1,items.length-1); acIndexes[listId]=idx; acHighlight(items,idx); e.preventDefault(); }
+  else if (e.key==='ArrowUp')   { idx=Math.max(idx-1,0); acIndexes[listId]=idx; acHighlight(items,idx); e.preventDefault(); }
   else if (e.key==='Enter' && idx>=0) { window[selectFn](items[idx].textContent); e.preventDefault(); }
-  else if (e.key==='Escape') closeAC(listId);
+  else if (e.key==='Escape')    { closeAC(listId); }
 }
 
-function acHighlight(items, idx) { items.forEach(function(li,i){ li.classList.toggle('selected',i===idx); }); }
+function acHighlight(items, idx) {
+  items.forEach(function(li,i){ li.classList.toggle('selected', i===idx); });
+}
 function closeAC(listId) { document.getElementById(listId).classList.add('hidden'); }
 
 function selectEmp(name) {
@@ -503,7 +511,6 @@ function selectEmp(name) {
   closeAC('autocompleteEmp');
   checkAlreadyClockedIn();
 }
-
 function selectJob(name) {
   document.getElementById('jobNum').value = name;
   closeAC('autocompleteJob');
@@ -514,7 +521,9 @@ function checkAlreadyClockedIn() {
   var name = document.getElementById('empName').value.trim().toLowerCase();
   var warn = document.getElementById('alreadyInWarn');
   if (!name) { warn.style.display='none'; return; }
-  var open = allLogs.find(function(r){ return r.employee_name.toLowerCase()===name && !r.time_out; });
+  var open = allLogs.find(function(r){
+    return r.employee_name.toLowerCase()===name && !r.time_out;
+  });
   if (open) {
     document.getElementById('alreadyInName').textContent = open.employee_name;
     document.getElementById('alreadyInJob').textContent  = open.job_number;
@@ -522,34 +531,44 @@ function checkAlreadyClockedIn() {
   } else { warn.style.display = 'none'; }
 }
 
-// ── CLOCK IN ──────────────────────────────
+// ── CLOCK IN ─────────────────────────────
 async function clockIn() {
   var emp  = document.getElementById('empName').value.trim();
   var job  = document.getElementById('jobNum').value.trim();
   var date = document.getElementById('workDate').value;
-  var tin  = document.getElementById('timeIn').value;
+  var tin  = document.getElementById('timeIn').value || nowTimeStr();
   if (!emp || !job || !date) {
     setStatus('error','Fill in name, job & date');
-    setTimeout(function(){setStatus('idle','Ready');},3000); return;
+    setTimeout(function(){setStatus('idle','Ready');},3000);
+    return;
   }
   setStatus('saving','Saving...');
   document.getElementById('clockInBtn').disabled = true;
-  // Always anchor timestamps to Central time
-  var timeInTs = tin ? centralToISO(date, tin) : new Date().toISOString();
-  // Query Supabase live for open sessions — never rely on stale cache for this
+
+  var timeInTS = makeTS(date, tin);
+
+  // Live query for any open session
   var openRes = await db.from(TABLE).select('*').ilike('employee_name', emp).is('time_out', null);
   if (openRes.data && openRes.data.length > 0) {
-    for (var oi=0; oi<openRes.data.length; oi++) {
-      await clockOutRecord(openRes.data[oi], timeInTs);
+    for (var i=0; i<openRes.data.length; i++) {
+      await doClockOut(openRes.data[i].id, tin, date);
     }
   }
+
   var res = await db.from(TABLE).insert([{
-    employee_name:emp, job_number:job, work_date:date,
-    time_in:timeInTs, time_out:null, total_hours:null
+    employee_name: emp,
+    job_number:    job,
+    work_date:     date,
+    time_in:       timeInTS,
+    time_out:      null,
+    total_hours:   null
   }]);
+
   document.getElementById('clockInBtn').disabled = false;
+
   if (res.error) {
-    console.error(res.error); setStatus('error','Save failed');
+    console.error(res.error);
+    setStatus('error','Save failed');
     setTimeout(function(){setStatus('idle','Ready');},4000);
   } else {
     setStatus('success','Clocked In');
@@ -560,15 +579,14 @@ async function clockIn() {
   }
 }
 
-// ── CLOCK OUT — open modal ─────────────────
+// ── CLOCK OUT MODAL ──────────────────────
 function clockOut(id) {
   var rec = allLogs.find(function(r){ return r.id===id; });
   if (!rec) return;
   pendingClockOutId = id;
-  // Default to current Central time
-  document.getElementById('coModalTime').value = dateToTimeInput(new Date());
+  document.getElementById('coModalTime').value = nowTimeStr();
   document.getElementById('coModalSub').textContent =
-    rec.employee_name+' — '+rec.job_number+' (in at '+fmtTime(rec.time_in)+')';
+    rec.employee_name + ' — ' + rec.job_number + ' (in at ' + fmtTime(rec.time_in) + ')';
   updateClockOutPreview();
   document.getElementById('coModalTime').oninput = updateClockOutPreview;
   openModal('clockOutModal');
@@ -579,95 +597,114 @@ function updateClockOutPreview() {
   var tval = document.getElementById('coModalTime').value;
   var prev = document.getElementById('coModalHrsPreview');
   if (!rec || !tval) { prev.textContent='--'; return; }
-  var tin  = new Date(rec.time_in);
-  var outIso = centralToISO(rec.work_date, tval);
-  var tout = new Date(outIso);
-  if (tout <= tin) tout = new Date(tout.getTime() + 86400000);
-  var hrs  = Math.max(0,((tout-tin)/3600000));
-  if (isNaN(hrs)) { prev.textContent='Invalid time'; return; }
-  prev.innerHTML = '<span style="color:#fbbf24;font-size:1.4rem;font-weight:800;">'+hrs.toFixed(2)+'</span> <span style="color:#627d98">hrs calculated</span>';
+  var inHHMM = tsToHHMM(rec.time_in);
+  if (!inHHMM) { prev.textContent='--'; return; }
+  var diff = hmToMins(tval) - hmToMins(inHHMM);
+  if (diff < 0) diff += 1440;
+  var hrs = diff / 60;
+  prev.innerHTML = '<span style="color:#fbbf24;font-size:1.4rem;font-weight:800;">' +
+    hrs.toFixed(2) + '</span> <span style="color:#627d98">hrs calculated</span>';
 }
 
 async function confirmClockOut() {
   var rec  = allLogs.find(function(r){ return r.id===pendingClockOutId; });
   var tval = document.getElementById('coModalTime').value;
   if (!rec || !tval) return;
-  // Build clock-out in Central time using the work_date
-  var outIso = centralToISO(rec.work_date, tval);
-  // If clock-out ended up before clock-in (day rollover edge case), add 24hrs
-  if (new Date(outIso) <= new Date(rec.time_in)) {
-    var d = new Date(rec.work_date+'T00:00:00Z');
-    d.setUTCDate(d.getUTCDate()+1);
-    outIso = centralToISO(localDateStr(d), tval);
-  }
   closeModal('clockOutModal');
   setStatus('saving','Saving...');
-  await clockOutRecord(rec, outIso);
+  await doClockOut(rec.id, tval, rec.work_date);
   setStatus('success','Clocked Out');
   setTimeout(function(){setStatus('idle','Ready');},2500);
   await loadAll();
 }
 
-// ── EDIT TIME OUT — open modal ─────────────
+// ── CORE CLOCK OUT (no timezone math) ───
+async function doClockOut(id, timeStr, dateStr) {
+  // Find the record to get time_in
+  var rec = allLogs.find(function(r){ return r.id===id; });
+  if (!rec) {
+    // Fetch it fresh if not in cache
+    var fr = await db.from(TABLE).select('*').eq('id',id).single();
+    if (fr.error || !fr.data) { console.error('Record not found', id); return; }
+    rec = fr.data;
+  }
+  var inHHMM  = tsToHHMM(rec.time_in);
+  var diff    = hmToMins(timeStr) - hmToMins(inHHMM);
+  if (diff < 0) diff += 1440;
+  var hrs     = Math.round(diff) / 60;
+  var timeOutTS = makeTS(dateStr, timeStr);
+
+  console.log('Clocking out', rec.employee_name, '| in:', rec.time_in, '| out:', timeOutTS, '| hrs:', hrs);
+
+  var res = await db.from(TABLE)
+    .update({ time_out: timeOutTS, total_hours: hrs })
+    .eq('id', id);
+
+  if (res.error) {
+    console.error('Clock out failed:', res.error);
+  } else {
+    console.log('Clock out success');
+  }
+}
+
+// ── CLOCK OUT ALL ────────────────────────
+async function clockOutAll() {
+  var open = allLogs.filter(function(r){ return !r.time_out; });
+  if (!open.length) return;
+  if (!confirm('Clock out all ' + open.length + ' active workers?')) return;
+  setStatus('saving','Clocking out all...');
+  var now = nowTimeStr();
+  await Promise.all(open.map(function(r){
+    return doClockOut(r.id, now, r.work_date);
+  }));
+  setStatus('success','All clocked out');
+  setTimeout(function(){setStatus('idle','Ready');},3000);
+  await loadAll();
+}
+
+// ── EDIT MODAL ───────────────────────────
 function editEntry(id) {
   var rec = allLogs.find(function(r){ return r.id===id; });
   if (!rec) return;
   pendingEditId   = id;
   pendingEditDate = rec.work_date;
   document.getElementById('editModalSub').textContent =
-    rec.employee_name+' — '+rec.job_number+' on '+rec.work_date;
-  // Pre-fill current times (extract HH:MM from ISO string in local time)
-  document.getElementById('editTimeIn').value  = tsToTimeInput(rec.time_in);
-  document.getElementById('editTimeOut').value = rec.time_out ? tsToTimeInput(rec.time_out) : '';
+    rec.employee_name + ' — ' + rec.job_number + ' on ' + rec.work_date;
+  document.getElementById('editTimeIn').value  = tsToHHMM(rec.time_in);
+  document.getElementById('editTimeOut').value = rec.time_out ? tsToHHMM(rec.time_out) : '';
   updateEditPreview();
   openModal('editModal');
-}
-
-function tsToTimeInput(ts) {
-  if (!ts) return '';
-  return dateToTimeInput(new Date(ts));  // uses Central timezone
 }
 
 function updateEditPreview() {
   var inVal  = document.getElementById('editTimeIn').value;
   var outVal = document.getElementById('editTimeOut').value;
   var prev   = document.getElementById('editHrsPreview');
-  if (!inVal || !outVal || !pendingEditDate) { prev.textContent='--'; return; }
-  var tin  = new Date(centralToISO(pendingEditDate, inVal));
-  var tout = new Date(centralToISO(pendingEditDate, outVal));
-  if (tout <= tin) tout = new Date(tout.getTime() + 86400000);
-  var hrs  = Math.max(0,(tout-tin)/3600000);
-  if (isNaN(hrs)) { prev.textContent='Invalid'; return; }
-  prev.innerHTML = '<span style="color:#fbbf24;font-size:1.4rem;font-weight:800;">'+hrs.toFixed(2)+'</span> <span style="color:#627d98">hrs — In: '+fmtTimeStr(inVal)+' &rarr; Out: '+fmtTimeStr(outVal)+'</span>';
-}
-
-function fmtTimeStr(hhmm) {
-  if (!hhmm) return '--';
-  var parts = hhmm.split(':');
-  var h = parseInt(parts[0]), m = parts[1];
-  var ampm = h>=12?'PM':'AM';
-  h = h%12||12;
-  return h+':'+m+' '+ampm;
+  if (!inVal || !outVal) { prev.textContent='--'; return; }
+  var diff = hmToMins(outVal) - hmToMins(inVal);
+  if (diff < 0) diff += 1440;
+  var hrs = diff / 60;
+  prev.innerHTML = '<span style="color:#fbbf24;font-size:1.4rem;font-weight:800;">' + hrs.toFixed(2) +
+    '</span> <span style="color:#627d98">hrs — In: ' + fmtTimeStr(inVal) + ' &rarr; Out: ' + fmtTimeStr(outVal) + '</span>';
 }
 
 async function confirmEdit() {
   var inVal  = document.getElementById('editTimeIn').value;
   var outVal = document.getElementById('editTimeOut').value;
   if (!pendingEditId || !inVal || !outVal) return;
-  // Build timestamps in Central time
-  var tin  = new Date(centralToISO(pendingEditDate, inVal));
-  var tout = new Date(centralToISO(pendingEditDate, outVal));
-  if (tout <= tin) tout = new Date(tout.getTime() + 86400000);
-  var hrs  = Math.max(0,+((tout-tin)/3600000).toFixed(2));
+  var diff = hmToMins(outVal) - hmToMins(inVal);
+  if (diff < 0) diff += 1440;
+  var hrs = Math.round(diff) / 60;
   closeModal('editModal');
   setStatus('saving','Saving...');
   var res = await db.from(TABLE).update({
-    time_in:     tin.toISOString(),
-    time_out:    tout.toISOString(),
+    time_in:     makeTS(pendingEditDate, inVal),
+    time_out:    makeTS(pendingEditDate, outVal),
     total_hours: hrs
   }).eq('id', pendingEditId);
   if (res.error) {
-    console.error(res.error); setStatus('error','Save failed');
+    console.error(res.error);
+    setStatus('error','Save failed');
     setTimeout(function(){setStatus('idle','Ready');},4000);
   } else {
     setStatus('success','Saved');
@@ -676,103 +713,72 @@ async function confirmEdit() {
   }
 }
 
-// ── LOW-LEVEL CLOCK OUT ───────────────────
-async function clockOutRecord(rec, outTime) {
-  // Always use ISO string for Supabase — avoids local-time/UTC mismatch
-  var tout;
-  if (outTime) {
-    // If passed a local datetime string like "2026-05-11T14:30:00", parse carefully
-    tout = (typeof outTime === 'string' && !outTime.endsWith('Z'))
-      ? new Date(outTime)   // JS parses local ISO as local time
-      : new Date(outTime);
-  } else {
-    tout = new Date();
-  }
-  var tin = new Date(rec.time_in);
-  var hrs = Math.max(0, +((tout - tin) / 3600000).toFixed(2));
-  var res = await db.from(TABLE)
-    .update({ time_out: tout.toISOString(), total_hours: hrs })
-    .eq('id', rec.id);
-  if (res.error) {
-    console.error('clockOutRecord error:', res.error);
-    return false;
-  }
-  return true;
-}
-
-// ── CLOCK OUT ALL ─────────────────────────
-async function clockOutAll() {
-  var open = allLogs.filter(function(r){ return !r.time_out; });
-  if (!open.length) return;
-  if (!confirm('Clock out all '+open.length+' active workers?')) return;
-  setStatus('saving','Clocking out all...');
-  await Promise.all(open.map(function(r){ return clockOutRecord(r); }));
-  setStatus('success','All clocked out');
-  setTimeout(function(){setStatus('idle','Ready');},3000);
-  await loadAll();
-}
-
-// ── ACTIVE BADGE ──────────────────────────
+// ── ACTIVE BADGE ─────────────────────────
 function updateActiveBadge() {
   var n = allLogs.filter(function(r){ return !r.time_out; }).length;
-  document.getElementById('activeCount').textContent    = n+' active';
+  document.getElementById('activeCount').textContent    = n + ' active';
   document.getElementById('activeTabBadge').textContent = n;
 }
 
-// ── RENDER: ACTIVE WORKERS ────────────────
+// ── RENDER: ACTIVE WORKERS ───────────────
 function renderActiveWorkers() {
   var open = allLogs.filter(function(r){ return !r.time_out; });
   var el   = document.getElementById('activeWorkersList');
   var wrap = document.getElementById('clockOutAllWrap');
   if (!open.length) {
-    el.innerHTML='<div class="empty"><div class="empty-icon">&#128119;</div><div>No one clocked in right now</div></div>';
-    wrap.classList.add('hidden'); return;
+    el.innerHTML = '<div class="empty"><div class="empty-icon">&#128119;</div><div>No one clocked in right now</div></div>';
+    wrap.classList.add('hidden');
+    return;
   }
   wrap.classList.remove('hidden');
   el.innerHTML = open.map(function(r){
-    return '<div class="worker-card mb-3">'+
-      '<div class="flex items-center gap-3 flex-1 min-w-0">'+
-      '<span class="live-dot"></span>'+
-      '<div class="min-w-0">'+
-      '<div class="font-display font-700 text-xl text-steel-100 leading-tight truncate">'+esc(r.employee_name)+'</div>'+
-      '<div class="text-amber-400 font-display font-600 text-sm tracking-wide">'+esc(r.job_number)+'</div>'+
-      '<div class="text-steel-500 font-body text-xs mt-0.5">In at '+fmtTime(r.time_in)+' &nbsp;&middot;&nbsp; '+elapsedStr(r.time_in)+'</div>'+
-      '</div></div>'+
-      '<button class="btn-danger flex-shrink-0" onclick="clockOut(\''+r.id+'\')">&#9209; Clock Out</button>'+
+    return '<div class="worker-card mb-3">' +
+      '<div class="flex items-center gap-3 flex-1 min-w-0">' +
+      '<span class="live-dot"></span>' +
+      '<div class="min-w-0">' +
+      '<div class="font-display font-700 text-xl text-steel-100 leading-tight truncate">'+esc(r.employee_name)+'</div>' +
+      '<div class="text-amber-400 font-display font-600 text-sm tracking-wide">'+esc(r.job_number)+'</div>' +
+      '<div class="text-steel-500 font-body text-xs mt-0.5">In at '+fmtTime(r.time_in)+' &nbsp;&middot;&nbsp; '+elapsedStr(r.time_in)+'</div>' +
+      '</div></div>' +
+      '<button class="btn-danger flex-shrink-0" onclick="clockOut(''+r.id+'')">&#9209; Clock Out</button>' +
       '</div>';
   }).join('');
 }
 
-// elapsedStr is defined in timezone utilities above
-
-// ── RENDER: TODAY ENTRIES ─────────────────
+// ── RENDER: TODAY ENTRIES ────────────────
 function renderTodayEntries() {
-  var today = localDateStr();
+  var today = todayStr();
   var rows  = allLogs.filter(function(r){ return r.work_date===today && r.time_out; });
   var el    = document.getElementById('todayEntries');
-  if (!rows.length) { el.innerHTML='<div class="empty"><div class="empty-icon">&#128203;</div><div>No completed entries yet today</div></div>'; return; }
-  el.innerHTML='<div class="card overflow-auto"><table class="data-table">'+
-    '<thead><tr><th>Employee</th><th>Job #</th><th>In</th><th>Out</th><th>Hrs</th><th></th></tr></thead><tbody>'+
+  if (!rows.length) {
+    el.innerHTML='<div class="empty"><div class="empty-icon">&#128203;</div><div>No completed entries yet today</div></div>';
+    return;
+  }
+  el.innerHTML = '<div class="card overflow-auto"><table class="data-table">' +
+    '<thead><tr><th>Employee</th><th>Job #</th><th>In</th><th>Out</th><th>Hrs</th><th></th></tr></thead><tbody>' +
     rows.map(function(r){
-      return '<tr>'+
-        '<td>'+esc(r.employee_name)+'</td>'+
-        '<td><span class="text-amber-400 font-display font-600">'+esc(r.job_number)+'</span></td>'+
-        '<td>'+fmtTime(r.time_in)+'</td>'+
-        '<td>'+fmtTime(r.time_out)+'</td>'+
-        '<td class="hours-cell">'+(+r.total_hours||0).toFixed(2)+'</td>'+
-        '<td><button class="btn-edit" onclick="editEntry(\''+r.id+'\')">&#9998; Edit</button></td>'+
+      return '<tr>' +
+        '<td>'+esc(r.employee_name)+'</td>' +
+        '<td><span class="text-amber-400 font-display font-600">'+esc(r.job_number)+'</span></td>' +
+        '<td>'+fmtTime(r.time_in)+'</td>' +
+        '<td>'+fmtTime(r.time_out)+'</td>' +
+        '<td class="hours-cell">'+(+r.total_hours||0).toFixed(2)+'</td>' +
+        '<td><button class="btn-edit" onclick="editEntry(''+r.id+'')">&#9998; Edit</button></td>' +
         '</tr>';
-    }).join('')+
+    }).join('') +
     '</tbody></table></div>';
 }
 
-// ── RENDER: DAILY LOG ─────────────────────
+// ── RENDER: DAILY LOG ────────────────────
 function renderLogs() {
   var search = document.getElementById('searchInput').value.toLowerCase();
   var dateF  = document.getElementById('filterDate').value;
   var rows   = allLogs;
-  if (search) rows = rows.filter(function(r){ return r.employee_name.toLowerCase().includes(search)||r.job_number.toLowerCase().includes(search); });
-  if (dateF)  rows = rows.filter(function(r){ return r.work_date===dateF; });
+  if (search) rows = rows.filter(function(r){
+    return r.employee_name.toLowerCase().includes(search) || r.job_number.toLowerCase().includes(search);
+  });
+  if (dateF) rows = rows.filter(function(r){ return r.work_date===dateF; });
+
   var tbody = document.getElementById('logsBody');
   var meta  = document.getElementById('logsMeta');
   if (!rows.length) {
@@ -790,41 +796,59 @@ function renderLogs() {
       '<td class="text-steel-400">'+(isOpen?'<span class="badge badge-green">Active</span>':fmtTime(r.time_out))+'</td>'+
       '<td class="hours-cell">'+(isOpen?'--':(+(r.total_hours||0)).toFixed(2))+'</td>'+
       '<td>'+(isOpen
-        ? '<button class="btn-danger" style="padding:.2rem .6rem;font-size:.8rem" onclick="clockOut(\''+r.id+'\')">Out</button>'
-        : '<button class="btn-edit" onclick="editEntry(\''+r.id+'\')">&#9998; Edit</button>')+'</td>'+
-      '<td><button class="del-btn" onclick="deleteLog(\''+r.id+'\')">Del</button></td>'+
+        ? '<button class="btn-danger" style="padding:.2rem .6rem;font-size:.8rem" onclick="clockOut(''+r.id+'')">Out</button>'
+        : '<button class="btn-edit" onclick="editEntry(''+r.id+'')">&#9998; Edit</button>')+'</td>'+
+      '<td><button class="del-btn" onclick="deleteLog(''+r.id+'')">Del</button></td>'+
       '</tr>';
   }).join('');
   meta.textContent = rows.length+' record'+(rows.length!==1?'s':'')+' - Completed: '+total.toFixed(2)+' hrs';
 }
 
-function clearFilters() { document.getElementById('searchInput').value=''; document.getElementById('filterDate').value=''; renderLogs(); }
+function clearFilters() {
+  document.getElementById('searchInput').value='';
+  document.getElementById('filterDate').value='';
+  renderLogs();
+}
 
-// ── DELETE ────────────────────────────────
+// ── DELETE ───────────────────────────────
 async function deleteLog(id) {
   if (!confirm('Delete this entry?')) return;
   setStatus('saving','Deleting...');
   var res = await db.from(TABLE).delete().eq('id',id);
-  if (res.error) { setStatus('error','Delete failed'); setTimeout(function(){setStatus('idle','Ready');},3000); }
-  else { setStatus('success','Deleted'); setTimeout(function(){setStatus('idle','Ready');},2000); await loadAll(); }
+  if (res.error) {
+    setStatus('error','Delete failed');
+    setTimeout(function(){setStatus('idle','Ready');},3000);
+  } else {
+    setStatus('success','Deleted');
+    setTimeout(function(){setStatus('idle','Ready');},2000);
+    await loadAll();
+  }
 }
 
-// ── MONTHLY SUMMARY ───────────────────────
+// ── MONTHLY SUMMARY ──────────────────────
 function renderSummary() {
   var monthVal  = document.getElementById('summaryMonth').value;
   var jobFilter = document.getElementById('summaryJob').value.trim().toLowerCase();
   if (!monthVal) return;
-  var parts = monthVal.split('-');
-  var yr = parseInt(parts[0]), mo = parseInt(parts[1]);
+  var yr = parseInt(monthVal.split('-')[0]);
+  var mo = parseInt(monthVal.split('-')[1]);
   var rows = allLogs.filter(function(r){
     if (!r.time_out) return false;
-    var d = new Date(r.work_date+'T00:00:00');
+    var d = new Date(r.work_date+'T12:00:00'); // noon avoids any date edge cases
     return d.getFullYear()===yr && d.getMonth()+1===mo;
   });
   if (jobFilter) rows = rows.filter(function(r){ return r.job_number.toLowerCase().includes(jobFilter); });
-  var weekOf = function(d){ var day=new Date(d+'T00:00:00').getDate(); if(day<=7)return 0; if(day<=14)return 1; if(day<=21)return 2; return 3; };
+
+  var weekOf = function(dateStr){
+    var day = parseInt(dateStr.split('-')[2]);
+    if (day<=7) return 0; if (day<=14) return 1; if (day<=21) return 2; return 3;
+  };
   var jobs = {};
-  rows.forEach(function(r){ if(!jobs[r.job_number])jobs[r.job_number]=[0,0,0,0]; jobs[r.job_number][weekOf(r.work_date)]+=+r.total_hours||0; });
+  rows.forEach(function(r){
+    if (!jobs[r.job_number]) jobs[r.job_number]=[0,0,0,0];
+    jobs[r.job_number][weekOf(r.work_date)] += +r.total_hours||0;
+  });
+
   var container = document.getElementById('summaryContainer');
   if (!Object.keys(jobs).length) {
     container.innerHTML='<div class="empty"><div class="empty-icon">&#128202;</div><div>No completed data for '+monthVal+'</div></div>';
@@ -834,9 +858,11 @@ function renderSummary() {
   var weekLabels = ['Week 1 (1-7)','Week 2 (8-14)','Week 3 (15-21)','Week 4+ (22-end)'];
   var grandWeeks = [0,0,0,0];
   var html = '<div class="font-display text-lg font-700 tracking-wide text-steel-300 uppercase mb-4">'+monthName+'</div>'+
-    '<table class="summary-grid w-full"><thead><tr><th>Job #</th>'+weekLabels.map(function(w){return '<th>'+w+'</th>';}).join('')+'<th>Total</th></tr></thead><tbody>';
-  Object.entries(jobs).sort().forEach(function(entry){
-    var job=entry[0], weeks=entry[1];
+    '<table class="summary-grid w-full"><thead><tr><th>Job #</th>'+
+    weekLabels.map(function(w){return '<th>'+w+'</th>';}).join('')+
+    '<th>Total</th></tr></thead><tbody>';
+  Object.entries(jobs).sort().forEach(function(e){
+    var job=e[0], weeks=e[1];
     var tot=weeks.reduce(function(a,b){return a+b;},0);
     weeks.forEach(function(v,i){grandWeeks[i]+=v;});
     html+='<tr><td class="font-display font-600 text-amber-400">'+esc(job)+'</td>'+
@@ -862,12 +888,18 @@ function renderEmpTotals(rows) {
     }).join('')+'</tbody></table>';
 }
 
-// ── HELPERS ───────────────────────────────
+// ── HELPERS ──────────────────────────────
+function fmtTimeStr(hhmm) {
+  if (!hhmm) return '--';
+  var h=parseInt(hhmm.split(':')[0]), m=hhmm.split(':')[1];
+  var ampm=h>=12?'PM':'AM';
+  h=h%12||12;
+  return h+':'+m+' '+ampm;
+}
 function esc(s)     { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(s) { return esc(s).replace(/'/g,'&#39;'); }
-// fmtTime and elapsedStr are defined in timezone utilities above
 
-// ── BOOT ──────────────────────────────────
+// ── BOOT ─────────────────────────────────
 init();
 </script>
 </body>
