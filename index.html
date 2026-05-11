@@ -27,13 +27,18 @@
     h1,h2,h3,.font-display{font-family:'Barlow Condensed',sans-serif}
     body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
     #app{position:relative;z-index:1}
+
     .field{background:#102a43;border:1px solid #334e68;color:#d9e2ec;border-radius:4px;padding:.55rem .75rem;width:100%;font-family:'Barlow',sans-serif;font-size:.95rem;transition:border-color .15s,box-shadow .15s}
     .field:focus{outline:none;border-color:#fbbf24;box-shadow:0 0 0 2px rgba(251,191,36,.2)}
     .field::placeholder{color:#486581}
+
+    /* ── Autocomplete ── */
     .autocomplete-wrap{position:relative}
-    .autocomplete-list{position:absolute;top:100%;left:0;right:0;z-index:50;background:#102a43;border:1px solid #334e68;border-top:none;border-radius:0 0 4px 4px;max-height:200px;overflow-y:auto}
+    .autocomplete-list{position:absolute;top:100%;left:0;right:0;z-index:100;background:#102a43;border:1px solid #334e68;border-top:none;border-radius:0 0 4px 4px;max-height:200px;overflow-y:auto}
     .autocomplete-list li{padding:.5rem .75rem;cursor:pointer;font-size:.95rem;color:#d9e2ec;list-style:none;transition:background .1s}
     .autocomplete-list li:hover,.autocomplete-list li.selected{background:#1a3a55;color:#fbbf24}
+
+    /* ── Buttons ── */
     .btn-primary{background:#fbbf24;color:#0a1929;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.1rem;letter-spacing:.05em;text-transform:uppercase;padding:.65rem 1.5rem;border-radius:4px;border:none;cursor:pointer;transition:background .15s,transform .1s;white-space:nowrap}
     .btn-primary:hover{background:#f59e0b}
     .btn-primary:active{transform:scale(.98)}
@@ -42,14 +47,30 @@
     .btn-danger:hover{background:#991b1b;color:#fee2e2}
     .btn-ghost{background:transparent;color:#829ab1;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:1rem;letter-spacing:.04em;text-transform:uppercase;padding:.5rem 1rem;border-radius:4px;border:1px solid #334e68;cursor:pointer;transition:all .15s}
     .btn-ghost:hover{border-color:#829ab1;color:#d9e2ec}
+    .btn-edit{background:transparent;border:none;cursor:pointer;color:#486581;font-size:.82rem;padding:.25rem .5rem;border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:.05em;text-transform:uppercase;transition:color .15s,background .15s}
+    .btn-edit:hover{color:#fbbf24;background:rgba(251,191,36,.1)}
+    .del-btn{background:transparent;border:none;cursor:pointer;color:#486581;font-size:.82rem;padding:.25rem .5rem;border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:.05em;text-transform:uppercase;transition:color .15s,background .15s}
+    .del-btn:hover{color:#f87171;background:rgba(248,113,113,.1)}
+
+    /* ── Tabs ── */
     .tab-btn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.05rem;letter-spacing:.06em;text-transform:uppercase;padding:.6rem 1.1rem;border-bottom:3px solid transparent;cursor:pointer;color:#627d98;background:transparent;border-top:none;border-left:none;border-right:none;transition:color .15s,border-color .15s;white-space:nowrap}
     .tab-btn.active{color:#fbbf24;border-bottom-color:#fbbf24}
     .tab-btn:hover:not(.active){color:#9fb3c8}
+
+    /* ── Cards ── */
     .card{background:#102a43;border:1px solid #243b53;border-radius:6px;padding:1.5rem}
     .worker-card{background:#0d2236;border:1px solid #1e4060;border-radius:8px;padding:1.1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;transition:border-color .15s,box-shadow .15s}
     .worker-card:hover{border-color:#334e68;box-shadow:0 0 0 1px #334e68}
     .live-dot{width:9px;height:9px;border-radius:50%;background:#4ade80;animation:livepulse 2s infinite;flex-shrink:0}
     @keyframes livepulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+
+    /* ── Modal ── */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem}
+    .modal-box{background:#102a43;border:1px solid #334e68;border-radius:10px;padding:2rem;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+    .modal-title{font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#d9e2ec;margin-bottom:.25rem}
+    .modal-sub{font-size:.9rem;color:#627d98;margin-bottom:1.25rem}
+
+    /* ── Tables ── */
     .data-table{width:100%;border-collapse:collapse;font-size:.9rem}
     .data-table th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:#627d98;border-bottom:1px solid #243b53;padding:.6rem .75rem;text-align:left}
     .data-table td{padding:.65rem .75rem;border-bottom:1px solid #1a3550;color:#bcccdc;vertical-align:middle}
@@ -60,6 +81,8 @@
     .summary-grid tr:nth-child(even) td{background:rgba(255,255,255,.02)}
     .hours-cell{color:#fbbf24;font-weight:600;font-family:'Barlow Condensed',sans-serif;font-size:1rem}
     .hours-total{color:#f59e0b;font-weight:800;font-family:'Barlow Condensed',sans-serif;font-size:1.05rem}
+
+    /* ── Status / badges ── */
     .status-pill{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:99px;font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;transition:all .3s}
     .status-pill.idle{background:#1a3550;color:#627d98}
     .status-pill.saving{background:#1a3a2a;color:#4ade80}
@@ -68,8 +91,12 @@
     .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
     .dot.pulse{animation:pulse 1.2s infinite}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-    .del-btn{background:transparent;border:none;cursor:pointer;color:#486581;font-size:.85rem;padding:.25rem .5rem;border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:.05em;text-transform:uppercase;transition:color .15s,background .15s}
-    .del-btn:hover{color:#f87171;background:rgba(248,113,113,.1)}
+    .badge{display:inline-block;padding:.1rem .5rem;border-radius:99px;font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+    .badge-green{background:#14532d;color:#4ade80}
+    .badge-gray{background:#1a3550;color:#627d98}
+    .open-row td{background:rgba(74,222,128,.04)}
+
+    /* ── Misc ── */
     .spinner{display:inline-block;width:16px;height:16px;border:2px solid #334e68;border-top-color:#fbbf24;border-radius:50%;animation:spin .7s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
     .empty{text-align:center;padding:3rem 1rem;color:#486581}
@@ -77,13 +104,62 @@
     ::-webkit-scrollbar{width:6px;height:6px}
     ::-webkit-scrollbar-track{background:#0a1929}
     ::-webkit-scrollbar-thumb{background:#334e68;border-radius:3px}
-    .badge{display:inline-block;padding:.1rem .5rem;border-radius:99px;font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
-    .badge-green{background:#14532d;color:#4ade80}
-    .badge-gray{background:#1a3550;color:#627d98}
-    .open-row td{background:rgba(74,222,128,.04)}
   </style>
 </head>
 <body>
+
+<!-- ══════════════════════════════════════
+     CLOCK-OUT CONFIRMATION MODAL
+══════════════════════════════════════ -->
+<div id="clockOutModal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <div class="modal-title">&#9209; Confirm Clock Out</div>
+    <div class="modal-sub" id="coModalSub">Clocking out employee</div>
+    <div class="mb-4">
+      <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Time Out</label>
+      <input id="coModalTime" type="time" class="field" />
+      <div class="text-xs text-steel-600 mt-1">Adjust if the actual clock-out was earlier or later.</div>
+    </div>
+    <div id="coModalHrsPreview" class="mb-5 p-3 rounded bg-steel-900 border border-steel-800 font-display text-steel-400 text-sm">
+      Hours will be calculated on save.
+    </div>
+    <div class="flex gap-3 justify-end">
+      <button class="btn-ghost" onclick="closeModal('clockOutModal')">Cancel</button>
+      <button class="btn-danger" onclick="confirmClockOut()">&#9209; Confirm Clock Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     EDIT TIME-OUT MODAL
+══════════════════════════════════════ -->
+<div id="editModal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <div class="modal-title">&#9998; Edit Entry</div>
+    <div class="modal-sub" id="editModalSub">Adjust clock-out time</div>
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div>
+        <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Time In</label>
+        <input id="editTimeIn" type="time" class="field" oninput="updateEditPreview()" />
+      </div>
+      <div>
+        <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Time Out</label>
+        <input id="editTimeOut" type="time" class="field" oninput="updateEditPreview()" />
+      </div>
+    </div>
+    <div id="editHrsPreview" class="mb-5 p-3 rounded bg-steel-900 border border-steel-800 font-display text-sm text-steel-400">
+      --
+    </div>
+    <div class="flex gap-3 justify-end">
+      <button class="btn-ghost" onclick="closeModal('editModal')">Cancel</button>
+      <button class="btn-primary" onclick="confirmEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════ -->
 <div id="app" class="max-w-5xl mx-auto px-4 py-6">
 
   <!-- HEADER -->
@@ -111,48 +187,71 @@
     <button class="tab-btn" onclick="showTab('summary')">Monthly Summary</button>
   </div>
 
-  <!-- TAB: CLOCK IN -->
+  <!-- ═══ TAB: CLOCK IN ═══ -->
   <div id="tab-clockin">
     <div class="card">
       <h2 class="font-display text-2xl font-700 tracking-wide text-steel-100 uppercase mb-5">Clock In Employee</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="sm:col-span-1">
+
+        <!-- Employee autocomplete -->
+        <div>
           <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Employee Name</label>
           <div class="autocomplete-wrap">
             <input id="empName" type="text" class="field" placeholder="Start typing a name..." autocomplete="off"
-              oninput="handleEmpInput()" onkeydown="handleEmpKey(event)" onblur="setTimeout(closeAutocomplete,150)" />
-            <ul id="autocompleteList" class="autocomplete-list hidden"></ul>
+              oninput="acFilter('empName','autocompleteEmp',empNames,'selectEmp')"
+              onkeydown="acKey(event,'autocompleteEmp',empNames,'selectEmp')"
+              onblur="setTimeout(function(){closeAC('autocompleteEmp')},150)" />
+            <ul id="autocompleteEmp" class="autocomplete-list hidden"></ul>
           </div>
         </div>
-        <div class="sm:col-span-1">
+
+        <!-- Job number autocomplete -->
+        <div>
           <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Job Number</label>
-          <input id="jobNum" type="text" class="field" placeholder="e.g. SKS-2025-001" />
+          <div class="autocomplete-wrap">
+            <input id="jobNum" type="text" class="field" placeholder="Start typing a job number..." autocomplete="off"
+              oninput="acFilter('jobNum','autocompleteJob',jobNumbers,'selectJob')"
+              onkeydown="acKey(event,'autocompleteJob',jobNumbers,'selectJob')"
+              onblur="setTimeout(function(){closeAC('autocompleteJob')},150)" />
+            <ul id="autocompleteJob" class="autocomplete-list hidden"></ul>
+          </div>
         </div>
-        <div class="sm:col-span-1">
+
+        <!-- Date -->
+        <div>
           <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Work Date</label>
           <input id="workDate" type="date" class="field" />
         </div>
-        <div class="sm:col-span-1">
-          <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Time In <span class="text-steel-600 normal-case font-body font-400 text-xs">(blank = right now)</span></label>
+
+        <!-- Time In -->
+        <div>
+          <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">
+            Time In <span class="text-steel-600 normal-case font-body font-400 text-xs">(blank = right now)</span>
+          </label>
           <input id="timeIn" type="time" class="field" />
         </div>
+
+        <!-- Already clocked in warning -->
         <div class="sm:col-span-2" id="alreadyInWarn" style="display:none">
           <div class="p-3 rounded border border-amber-600 bg-amber-900/20 text-amber-300 font-body text-sm">
-            <strong id="alreadyInName"></strong> is currently clocked in on job <strong id="alreadyInJob"></strong>. Submitting will automatically clock them out of that job first.
+            &#9888; <strong id="alreadyInName"></strong> is currently clocked in on job <strong id="alreadyInJob"></strong>.
+            Clocking in will automatically clock them out of that job first.
           </div>
         </div>
+
         <div class="sm:col-span-2 flex justify-end pt-1">
           <button class="btn-primary" id="clockInBtn" onclick="clockIn()">&#9201; Clock In</button>
         </div>
       </div>
     </div>
+
     <div class="mt-6">
       <h3 class="font-display text-lg font-700 tracking-wide text-steel-400 uppercase mb-3">Today's Completed Entries</h3>
       <div id="todayEntries"><div class="empty"><div class="empty-icon">&#128203;</div><div>No completed entries yet today</div></div></div>
     </div>
   </div>
 
-  <!-- TAB: ACTIVE -->
+  <!-- ═══ TAB: ACTIVE ═══ -->
   <div id="tab-active" class="hidden">
     <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
       <h2 class="font-display text-2xl font-700 tracking-wide text-steel-100 uppercase">Currently Clocked In</h2>
@@ -164,7 +263,7 @@
     </div>
   </div>
 
-  <!-- TAB: LOGS -->
+  <!-- ═══ TAB: LOGS ═══ -->
   <div id="tab-logs" class="hidden">
     <div class="flex flex-wrap gap-3 mb-5 items-end">
       <div class="flex-1 min-w-[180px]">
@@ -172,7 +271,7 @@
         <input id="searchInput" type="text" class="field" placeholder="Employee or Job #..." oninput="renderLogs()" />
       </div>
       <div>
-        <label class="block text-xs font-display font-600 tracking-widest text-steel-400 uppercase mb-1">Date</label>
+        <label class="block text-xs font-display font-600 tracking-widests text-steel-400 uppercase mb-1">Date</label>
         <input id="filterDate" type="date" class="field" style="width:auto" oninput="renderLogs()" />
       </div>
       <button class="btn-ghost" onclick="clearFilters()">Clear</button>
@@ -187,7 +286,7 @@
     <div id="logsMeta" class="mt-3 text-steel-600 font-display text-sm tracking-wide"></div>
   </div>
 
-  <!-- TAB: SUMMARY -->
+  <!-- ═══ TAB: SUMMARY ═══ -->
   <div id="tab-summary" class="hidden">
     <div class="flex flex-wrap gap-3 mb-5 items-end">
       <div>
@@ -207,38 +306,58 @@
     </div>
   </div>
 
-</div>
+</div><!-- /app -->
 
 <script>
+// ── CONFIG ────────────────────────────────
 const SUPABASE_URL      = 'https://vrdoinopqemwelvaxvsx.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyZG9pbm9wcWVtd2VsdmF4dnN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwODgxOTksImV4cCI6MjA5MzY2NDE5OX0.kIjcOCO0bUHHaDTXgetbH8pnKwNA0rmy0YOc4jWKD2E';
 const TABLE = 'labor_logs';
+// ─────────────────────────────────────────
 
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let allLogs = [], empNames = [], acSelected = -1;
+let allLogs    = [];
+let empNames   = [];
+let jobNumbers = [];
 
+// Modal state
+let pendingClockOutId = null;
+let pendingEditId     = null;
+let pendingEditDate   = null;
+
+// ── INIT ──────────────────────────────────
 function init() {
   setStatus('idle','Ready');
-  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('headerDate').textContent =
+    new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   const today = localDateStr();
-  document.getElementById('workDate').value = today;
+  document.getElementById('workDate').value     = today;
   document.getElementById('summaryMonth').value = today.slice(0,7);
+  // Close modals on backdrop click
+  ['clockOutModal','editModal'].forEach(function(id) {
+    document.getElementById(id).addEventListener('click', function(e) {
+      if (e.target === this) closeModal(id);
+    });
+  });
   loadAll();
 }
 
-function localDateStr(d = new Date()) {
+function localDateStr(d) {
+  d = d || new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
+// ── DATA ──────────────────────────────────
 async function loadAll() {
-  ['refreshSpinner','activeSpinner'].forEach(id => document.getElementById(id).classList.remove('hidden'));
-  const { data, error } = await db.from(TABLE).select('*').order('work_date',{ascending:false}).order('time_in',{ascending:false});
-  ['refreshSpinner','activeSpinner'].forEach(id => document.getElementById(id).classList.add('hidden'));
-  if (error) { console.error(error); return; }
-  allLogs = data || [];
-  empNames = [...new Set(allLogs.map(r => r.employee_name))].sort();
+  ['refreshSpinner','activeSpinner'].forEach(function(id){ document.getElementById(id).classList.remove('hidden'); });
+  var res = await db.from(TABLE).select('*').order('work_date',{ascending:false}).order('time_in',{ascending:false});
+  ['refreshSpinner','activeSpinner'].forEach(function(id){ document.getElementById(id).classList.add('hidden'); });
+  if (res.error) { console.error(res.error); return; }
+  allLogs    = res.data || [];
+  empNames   = [...new Set(allLogs.map(function(r){return r.employee_name}))].sort();
+  jobNumbers = [...new Set(allLogs.map(function(r){return r.job_number}))].sort();
   updateActiveBadge();
   renderActiveWorkers();
   renderTodayEntries();
@@ -246,167 +365,330 @@ async function loadAll() {
   renderSummary();
 }
 
+// ── STATUS ────────────────────────────────
 function setStatus(type, text) {
-  const pill = document.getElementById('statusPill');
-  pill.className = 'status-pill ' + type;
-  pill.querySelector('.dot').className = 'dot' + (type==='saving'?' pulse':'');
+  var pill = document.getElementById('statusPill');
+  pill.className = 'status-pill '+type;
+  pill.querySelector('.dot').className = 'dot'+(type==='saving'?' pulse':'');
   document.getElementById('statusText').textContent = text;
 }
 
+// ── TABS ──────────────────────────────────
 function showTab(name) {
-  ['clockin','active','logs','summary'].forEach(t => document.getElementById('tab-'+t).classList.toggle('hidden', t!==name));
-  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['clockin','active','logs','summary'][i]===name));
+  ['clockin','active','logs','summary'].forEach(function(t){
+    document.getElementById('tab-'+t).classList.toggle('hidden', t!==name);
+  });
+  document.querySelectorAll('.tab-btn').forEach(function(b,i){
+    b.classList.toggle('active', ['clockin','active','logs','summary'][i]===name);
+  });
 }
 
-function handleEmpInput() {
-  const val = document.getElementById('empName').value.toLowerCase().trim();
-  acSelected = -1;
-  checkAlreadyClockedIn();
-  if (!val) { closeAutocomplete(); return; }
-  const matches = empNames.filter(n => n.toLowerCase().includes(val));
-  if (!matches.length) { closeAutocomplete(); return; }
-  const list = document.getElementById('autocompleteList');
-  list.innerHTML = matches.map((n,i) => '<li data-idx="'+i+'" onmousedown="selectEmp(\''+esc(n)+'\')">'+esc(n)+'</li>').join('');
+// ── MODALS ────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+// ── AUTOCOMPLETE (generic) ────────────────
+var acIndexes = {};
+
+function acFilter(inputId, listId, source, selectFn) {
+  var val = document.getElementById(inputId).value.toLowerCase().trim();
+  acIndexes[listId] = -1;
+  if (inputId === 'empName') checkAlreadyClockedIn();
+  if (!val) { closeAC(listId); return; }
+  var matches = source.filter(function(n){ return n.toLowerCase().includes(val); });
+  if (!matches.length) { closeAC(listId); return; }
+  var list = document.getElementById(listId);
+  list.innerHTML = matches.map(function(n,i){
+    return '<li data-idx="'+i+'" onmousedown="'+selectFn+'(\''+escAttr(n)+'\')">'+esc(n)+'</li>';
+  }).join('');
   list.classList.remove('hidden');
 }
 
-function handleEmpKey(e) {
-  const list = document.getElementById('autocompleteList');
-  const items = list.querySelectorAll('li');
+function acKey(e, listId, source, selectFn) {
+  var list  = document.getElementById(listId);
+  var items = list.querySelectorAll('li');
   if (!items.length) return;
-  if (e.key==='ArrowDown') { acSelected=Math.min(acSelected+1,items.length-1); highlightAC(items); e.preventDefault(); }
-  else if (e.key==='ArrowUp') { acSelected=Math.max(acSelected-1,0); highlightAC(items); e.preventDefault(); }
-  else if (e.key==='Enter' && acSelected>=0) { selectEmp(items[acSelected].textContent); e.preventDefault(); }
-  else if (e.key==='Escape') closeAutocomplete();
+  var idx = acIndexes[listId] || -1;
+  if (e.key==='ArrowDown') { idx=Math.min(idx+1,items.length-1); acIndexes[listId]=idx; acHighlight(items,idx); e.preventDefault(); }
+  else if (e.key==='ArrowUp') { idx=Math.max(idx-1,0); acIndexes[listId]=idx; acHighlight(items,idx); e.preventDefault(); }
+  else if (e.key==='Enter' && idx>=0) { window[selectFn](items[idx].textContent); e.preventDefault(); }
+  else if (e.key==='Escape') closeAC(listId);
 }
 
-function highlightAC(items) { items.forEach((li,i) => li.classList.toggle('selected', i===acSelected)); }
+function acHighlight(items, idx) { items.forEach(function(li,i){ li.classList.toggle('selected',i===idx); }); }
+function closeAC(listId) { document.getElementById(listId).classList.add('hidden'); }
 
-function selectEmp(name) { document.getElementById('empName').value = name; closeAutocomplete(); checkAlreadyClockedIn(); }
-function closeAutocomplete() { document.getElementById('autocompleteList').classList.add('hidden'); }
+function selectEmp(name) {
+  document.getElementById('empName').value = name;
+  closeAC('autocompleteEmp');
+  checkAlreadyClockedIn();
+}
 
+function selectJob(name) {
+  document.getElementById('jobNum').value = name;
+  closeAC('autocompleteJob');
+}
+
+// ── ALREADY CLOCKED IN WARNING ────────────
 function checkAlreadyClockedIn() {
-  const name = document.getElementById('empName').value.trim().toLowerCase();
-  const warn = document.getElementById('alreadyInWarn');
+  var name = document.getElementById('empName').value.trim().toLowerCase();
+  var warn = document.getElementById('alreadyInWarn');
   if (!name) { warn.style.display='none'; return; }
-  const open = allLogs.find(r => r.employee_name.toLowerCase()===name && !r.time_out);
+  var open = allLogs.find(function(r){ return r.employee_name.toLowerCase()===name && !r.time_out; });
   if (open) {
     document.getElementById('alreadyInName').textContent = open.employee_name;
-    document.getElementById('alreadyInJob').textContent = open.job_number;
+    document.getElementById('alreadyInJob').textContent  = open.job_number;
     warn.style.display = 'block';
   } else { warn.style.display = 'none'; }
 }
 
+// ── CLOCK IN ──────────────────────────────
 async function clockIn() {
-  const emp = document.getElementById('empName').value.trim();
-  const job = document.getElementById('jobNum').value.trim();
-  const date = document.getElementById('workDate').value;
-  const tin = document.getElementById('timeIn').value;
-  if (!emp || !job || !date) { setStatus('error','Fill in name, job & date'); setTimeout(()=>setStatus('idle','Ready'),3000); return; }
+  var emp  = document.getElementById('empName').value.trim();
+  var job  = document.getElementById('jobNum').value.trim();
+  var date = document.getElementById('workDate').value;
+  var tin  = document.getElementById('timeIn').value;
+  if (!emp || !job || !date) {
+    setStatus('error','Fill in name, job & date');
+    setTimeout(function(){setStatus('idle','Ready');},3000); return;
+  }
   setStatus('saving','Saving...');
   document.getElementById('clockInBtn').disabled = true;
-  const timeInTs = tin ? (date+'T'+tin+':00') : new Date().toISOString();
-  const open = allLogs.find(r => r.employee_name.toLowerCase()===emp.toLowerCase() && !r.time_out);
+  var timeInTs = tin ? (date+'T'+tin+':00') : new Date().toISOString();
+  var open = allLogs.find(function(r){ return r.employee_name.toLowerCase()===emp.toLowerCase() && !r.time_out; });
   if (open) await clockOutRecord(open, timeInTs);
-  const { error } = await db.from(TABLE).insert([{ employee_name:emp, job_number:job, work_date:date, time_in:timeInTs, time_out:null, total_hours:null }]);
+  var res = await db.from(TABLE).insert([{
+    employee_name:emp, job_number:job, work_date:date,
+    time_in:timeInTs, time_out:null, total_hours:null
+  }]);
   document.getElementById('clockInBtn').disabled = false;
-  if (error) { console.error(error); setStatus('error','Save failed'); setTimeout(()=>setStatus('idle','Ready'),4000); }
-  else { setStatus('success','Clocked In'); setTimeout(()=>setStatus('idle','Ready'),3000); document.getElementById('timeIn').value=''; document.getElementById('alreadyInWarn').style.display='none'; await loadAll(); }
+  if (res.error) {
+    console.error(res.error); setStatus('error','Save failed');
+    setTimeout(function(){setStatus('idle','Ready');},4000);
+  } else {
+    setStatus('success','Clocked In');
+    setTimeout(function(){setStatus('idle','Ready');},3000);
+    document.getElementById('timeIn').value = '';
+    document.getElementById('alreadyInWarn').style.display = 'none';
+    await loadAll();
+  }
 }
 
-async function clockOut(id) {
-  const rec = allLogs.find(r => r.id===id);
+// ── CLOCK OUT — open modal ─────────────────
+function clockOut(id) {
+  var rec = allLogs.find(function(r){ return r.id===id; });
   if (!rec) return;
-  if (!confirm('Clock out '+rec.employee_name+' from '+rec.job_number+'?')) return;
+  pendingClockOutId = id;
+  // Default to current time
+  var now = new Date();
+  var hh  = String(now.getHours()).padStart(2,'0');
+  var mm  = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('coModalTime').value = hh+':'+mm;
+  document.getElementById('coModalSub').textContent =
+    rec.employee_name+' — '+rec.job_number+' (in at '+fmtTime(rec.time_in)+')';
+  updateClockOutPreview();
+  document.getElementById('coModalTime').oninput = updateClockOutPreview;
+  openModal('clockOutModal');
+}
+
+function updateClockOutPreview() {
+  var rec  = allLogs.find(function(r){ return r.id===pendingClockOutId; });
+  var tval = document.getElementById('coModalTime').value;
+  var prev = document.getElementById('coModalHrsPreview');
+  if (!rec || !tval) { prev.textContent='--'; return; }
+  var tin  = new Date(rec.time_in);
+  var date = rec.work_date;
+  var tout = new Date(date+'T'+tval+':00');
+  var hrs  = Math.max(0,((tout-tin)/3600000));
+  if (isNaN(hrs)) { prev.textContent='Invalid time'; return; }
+  prev.innerHTML = '<span style="color:#fbbf24;font-size:1.4rem;font-weight:800;">'+hrs.toFixed(2)+'</span> <span style="color:#627d98">hrs calculated</span>';
+}
+
+async function confirmClockOut() {
+  var rec  = allLogs.find(function(r){ return r.id===pendingClockOutId; });
+  var tval = document.getElementById('coModalTime').value;
+  if (!rec || !tval) return;
+  var outTs = rec.work_date+'T'+tval+':00';
+  closeModal('clockOutModal');
   setStatus('saving','Saving...');
-  await clockOutRecord(rec);
+  await clockOutRecord(rec, outTs);
   setStatus('success','Clocked Out');
-  setTimeout(()=>setStatus('idle','Ready'),2500);
+  setTimeout(function(){setStatus('idle','Ready');},2500);
   await loadAll();
 }
 
-async function clockOutRecord(rec, outTime) {
-  const tout = new Date(outTime || Date.now());
-  const tin = new Date(rec.time_in);
-  const hrs = Math.max(0, +((tout-tin)/3600000).toFixed(2));
-  const { error } = await db.from(TABLE).update({ time_out:tout.toISOString(), total_hours:hrs }).eq('id',rec.id);
-  if (error) console.error(error);
+// ── EDIT TIME OUT — open modal ─────────────
+function editEntry(id) {
+  var rec = allLogs.find(function(r){ return r.id===id; });
+  if (!rec) return;
+  pendingEditId   = id;
+  pendingEditDate = rec.work_date;
+  document.getElementById('editModalSub').textContent =
+    rec.employee_name+' — '+rec.job_number+' on '+rec.work_date;
+  // Pre-fill current times (extract HH:MM from ISO string in local time)
+  document.getElementById('editTimeIn').value  = tsToTimeInput(rec.time_in);
+  document.getElementById('editTimeOut').value = rec.time_out ? tsToTimeInput(rec.time_out) : '';
+  updateEditPreview();
+  openModal('editModal');
 }
 
+function tsToTimeInput(ts) {
+  if (!ts) return '';
+  var d = new Date(ts);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+function updateEditPreview() {
+  var inVal  = document.getElementById('editTimeIn').value;
+  var outVal = document.getElementById('editTimeOut').value;
+  var prev   = document.getElementById('editHrsPreview');
+  if (!inVal || !outVal || !pendingEditDate) { prev.textContent='--'; return; }
+  var tin  = new Date(pendingEditDate+'T'+inVal+':00');
+  var tout = new Date(pendingEditDate+'T'+outVal+':00');
+  var hrs  = Math.max(0,(tout-tin)/3600000);
+  if (isNaN(hrs)) { prev.textContent='Invalid'; return; }
+  prev.innerHTML = '<span style="color:#fbbf24;font-size:1.4rem;font-weight:800;">'+hrs.toFixed(2)+'</span> <span style="color:#627d98">hrs — In: '+fmtTimeStr(inVal)+' &rarr; Out: '+fmtTimeStr(outVal)+'</span>';
+}
+
+function fmtTimeStr(hhmm) {
+  if (!hhmm) return '--';
+  var parts = hhmm.split(':');
+  var h = parseInt(parts[0]), m = parts[1];
+  var ampm = h>=12?'PM':'AM';
+  h = h%12||12;
+  return h+':'+m+' '+ampm;
+}
+
+async function confirmEdit() {
+  var inVal  = document.getElementById('editTimeIn').value;
+  var outVal = document.getElementById('editTimeOut').value;
+  if (!pendingEditId || !inVal || !outVal) return;
+  var tin  = new Date(pendingEditDate+'T'+inVal+':00');
+  var tout = new Date(pendingEditDate+'T'+outVal+':00');
+  var hrs  = Math.max(0,+((tout-tin)/3600000).toFixed(2));
+  closeModal('editModal');
+  setStatus('saving','Saving...');
+  var res = await db.from(TABLE).update({
+    time_in:    tin.toISOString(),
+    time_out:   tout.toISOString(),
+    total_hours: hrs
+  }).eq('id', pendingEditId);
+  if (res.error) {
+    console.error(res.error); setStatus('error','Save failed');
+    setTimeout(function(){setStatus('idle','Ready');},4000);
+  } else {
+    setStatus('success','Saved');
+    setTimeout(function(){setStatus('idle','Ready');},2500);
+    await loadAll();
+  }
+}
+
+// ── LOW-LEVEL CLOCK OUT ───────────────────
+async function clockOutRecord(rec, outTime) {
+  var tout = new Date(outTime || Date.now());
+  var tin  = new Date(rec.time_in);
+  var hrs  = Math.max(0,+((tout-tin)/3600000).toFixed(2));
+  var res  = await db.from(TABLE).update({ time_out:tout.toISOString(), total_hours:hrs }).eq('id',rec.id);
+  if (res.error) console.error(res.error);
+}
+
+// ── CLOCK OUT ALL ─────────────────────────
 async function clockOutAll() {
-  const open = allLogs.filter(r => !r.time_out);
+  var open = allLogs.filter(function(r){ return !r.time_out; });
   if (!open.length) return;
   if (!confirm('Clock out all '+open.length+' active workers?')) return;
   setStatus('saving','Clocking out all...');
-  await Promise.all(open.map(r => clockOutRecord(r)));
+  await Promise.all(open.map(function(r){ return clockOutRecord(r); }));
   setStatus('success','All clocked out');
-  setTimeout(()=>setStatus('idle','Ready'),3000);
+  setTimeout(function(){setStatus('idle','Ready');},3000);
   await loadAll();
 }
 
+// ── ACTIVE BADGE ──────────────────────────
 function updateActiveBadge() {
-  const n = allLogs.filter(r => !r.time_out).length;
-  document.getElementById('activeCount').textContent = n+' active';
+  var n = allLogs.filter(function(r){ return !r.time_out; }).length;
+  document.getElementById('activeCount').textContent    = n+' active';
   document.getElementById('activeTabBadge').textContent = n;
 }
 
+// ── RENDER: ACTIVE WORKERS ────────────────
 function renderActiveWorkers() {
-  const open = allLogs.filter(r => !r.time_out);
-  const el = document.getElementById('activeWorkersList');
-  const wrap = document.getElementById('clockOutAllWrap');
-  if (!open.length) { el.innerHTML='<div class="empty"><div class="empty-icon">&#128119;</div><div>No one clocked in right now</div></div>'; wrap.classList.add('hidden'); return; }
+  var open = allLogs.filter(function(r){ return !r.time_out; });
+  var el   = document.getElementById('activeWorkersList');
+  var wrap = document.getElementById('clockOutAllWrap');
+  if (!open.length) {
+    el.innerHTML='<div class="empty"><div class="empty-icon">&#128119;</div><div>No one clocked in right now</div></div>';
+    wrap.classList.add('hidden'); return;
+  }
   wrap.classList.remove('hidden');
-  el.innerHTML = open.map(r =>
-    '<div class="worker-card mb-3">'+
-    '<div class="flex items-center gap-3 flex-1 min-w-0">'+
-    '<span class="live-dot"></span>'+
-    '<div class="min-w-0">'+
-    '<div class="font-display font-700 text-xl text-steel-100 leading-tight truncate">'+esc(r.employee_name)+'</div>'+
-    '<div class="text-amber-400 font-display font-600 text-sm tracking-wide">'+esc(r.job_number)+'</div>'+
-    '<div class="text-steel-500 font-body text-xs mt-0.5">In at '+fmtTime(r.time_in)+' &nbsp;&middot;&nbsp; '+elapsedStr(r.time_in)+'</div>'+
-    '</div></div>'+
-    '<button class="btn-danger flex-shrink-0" onclick="clockOut(\''+r.id+'\')">&#9209; Clock Out</button>'+
-    '</div>'
-  ).join('');
+  el.innerHTML = open.map(function(r){
+    return '<div class="worker-card mb-3">'+
+      '<div class="flex items-center gap-3 flex-1 min-w-0">'+
+      '<span class="live-dot"></span>'+
+      '<div class="min-w-0">'+
+      '<div class="font-display font-700 text-xl text-steel-100 leading-tight truncate">'+esc(r.employee_name)+'</div>'+
+      '<div class="text-amber-400 font-display font-600 text-sm tracking-wide">'+esc(r.job_number)+'</div>'+
+      '<div class="text-steel-500 font-body text-xs mt-0.5">In at '+fmtTime(r.time_in)+' &nbsp;&middot;&nbsp; '+elapsedStr(r.time_in)+'</div>'+
+      '</div></div>'+
+      '<button class="btn-danger flex-shrink-0" onclick="clockOut(\''+r.id+'\')">&#9209; Clock Out</button>'+
+      '</div>';
+  }).join('');
 }
 
 function elapsedStr(timeIn) {
   if (!timeIn) return '';
-  const mins = Math.floor((Date.now()-new Date(timeIn))/60000);
-  if (mins < 60) return mins+'m on site';
+  var mins = Math.floor((Date.now()-new Date(timeIn))/60000);
+  if (mins<60) return mins+'m on site';
   return Math.floor(mins/60)+'h '+mins%60+'m on site';
 }
 
+// ── RENDER: TODAY ENTRIES ─────────────────
 function renderTodayEntries() {
-  const today = localDateStr();
-  const rows = allLogs.filter(r => r.work_date===today && r.time_out);
-  const el = document.getElementById('todayEntries');
+  var today = localDateStr();
+  var rows  = allLogs.filter(function(r){ return r.work_date===today && r.time_out; });
+  var el    = document.getElementById('todayEntries');
   if (!rows.length) { el.innerHTML='<div class="empty"><div class="empty-icon">&#128203;</div><div>No completed entries yet today</div></div>'; return; }
-  el.innerHTML='<div class="card overflow-auto"><table class="data-table"><thead><tr><th>Employee</th><th>Job #</th><th>In</th><th>Out</th><th>Hrs</th></tr></thead><tbody>'+
-    rows.map(r=>'<tr><td>'+esc(r.employee_name)+'</td><td><span class="text-amber-400 font-display font-600">'+esc(r.job_number)+'</span></td><td>'+fmtTime(r.time_in)+'</td><td>'+fmtTime(r.time_out)+'</td><td class="hours-cell">'+(+r.total_hours||0).toFixed(2)+'</td></tr>').join('')+
+  el.innerHTML='<div class="card overflow-auto"><table class="data-table">'+
+    '<thead><tr><th>Employee</th><th>Job #</th><th>In</th><th>Out</th><th>Hrs</th><th></th></tr></thead><tbody>'+
+    rows.map(function(r){
+      return '<tr>'+
+        '<td>'+esc(r.employee_name)+'</td>'+
+        '<td><span class="text-amber-400 font-display font-600">'+esc(r.job_number)+'</span></td>'+
+        '<td>'+fmtTime(r.time_in)+'</td>'+
+        '<td>'+fmtTime(r.time_out)+'</td>'+
+        '<td class="hours-cell">'+(+r.total_hours||0).toFixed(2)+'</td>'+
+        '<td><button class="btn-edit" onclick="editEntry(\''+r.id+'\')">&#9998; Edit</button></td>'+
+        '</tr>';
+    }).join('')+
     '</tbody></table></div>';
 }
 
+// ── RENDER: DAILY LOG ─────────────────────
 function renderLogs() {
-  const search = document.getElementById('searchInput').value.toLowerCase();
-  const dateF = document.getElementById('filterDate').value;
-  let rows = allLogs;
-  if (search) rows = rows.filter(r => r.employee_name.toLowerCase().includes(search) || r.job_number.toLowerCase().includes(search));
-  if (dateF) rows = rows.filter(r => r.work_date===dateF);
-  const tbody = document.getElementById('logsBody');
-  const meta = document.getElementById('logsMeta');
-  if (!rows.length) { tbody.innerHTML='<tr><td colspan="8"><div class="empty"><div class="empty-icon">&#128269;</div><div>No records found</div></div></td></tr>'; meta.textContent=''; return; }
-  const total = rows.filter(r=>r.time_out).reduce((s,r)=>s+(+r.total_hours||0),0);
-  tbody.innerHTML = rows.map(r => {
-    const isOpen = !r.time_out;
+  var search = document.getElementById('searchInput').value.toLowerCase();
+  var dateF  = document.getElementById('filterDate').value;
+  var rows   = allLogs;
+  if (search) rows = rows.filter(function(r){ return r.employee_name.toLowerCase().includes(search)||r.job_number.toLowerCase().includes(search); });
+  if (dateF)  rows = rows.filter(function(r){ return r.work_date===dateF; });
+  var tbody = document.getElementById('logsBody');
+  var meta  = document.getElementById('logsMeta');
+  if (!rows.length) {
+    tbody.innerHTML='<tr><td colspan="8"><div class="empty"><div class="empty-icon">&#128269;</div><div>No records found</div></div></td></tr>';
+    meta.textContent=''; return;
+  }
+  var total = rows.filter(function(r){return r.time_out;}).reduce(function(s,r){return s+(+r.total_hours||0);},0);
+  tbody.innerHTML = rows.map(function(r){
+    var isOpen = !r.time_out;
     return '<tr class="'+(isOpen?'open-row':'')+'">'+
       '<td class="text-steel-300">'+r.work_date+'</td>'+
-      '<td class="font-500">'+esc(r.employee_name)+'</td>'+
+      '<td>'+esc(r.employee_name)+'</td>'+
       '<td><span class="text-amber-400 font-display font-600 text-sm">'+esc(r.job_number)+'</span></td>'+
       '<td class="text-steel-400">'+fmtTime(r.time_in)+'</td>'+
       '<td class="text-steel-400">'+(isOpen?'<span class="badge badge-green">Active</span>':fmtTime(r.time_out))+'</td>'+
       '<td class="hours-cell">'+(isOpen?'--':(+(r.total_hours||0)).toFixed(2))+'</td>'+
-      '<td>'+(isOpen?'<button class="btn-danger" style="padding:.2rem .6rem;font-size:.8rem" onclick="clockOut(\''+r.id+'\')">Out</button>':'<span class="badge badge-gray">Done</span>')+'</td>'+
+      '<td>'+(isOpen
+        ? '<button class="btn-danger" style="padding:.2rem .6rem;font-size:.8rem" onclick="clockOut(\''+r.id+'\')">Out</button>'
+        : '<button class="btn-edit" onclick="editEntry(\''+r.id+'\')">&#9998; Edit</button>')+'</td>'+
       '<td><button class="del-btn" onclick="deleteLog(\''+r.id+'\')">Del</button></td>'+
       '</tr>';
   }).join('');
@@ -415,67 +697,80 @@ function renderLogs() {
 
 function clearFilters() { document.getElementById('searchInput').value=''; document.getElementById('filterDate').value=''; renderLogs(); }
 
+// ── DELETE ────────────────────────────────
 async function deleteLog(id) {
   if (!confirm('Delete this entry?')) return;
   setStatus('saving','Deleting...');
-  const { error } = await db.from(TABLE).delete().eq('id',id);
-  if (error) { setStatus('error','Delete failed'); setTimeout(()=>setStatus('idle','Ready'),3000); }
-  else { setStatus('success','Deleted'); setTimeout(()=>setStatus('idle','Ready'),2000); await loadAll(); }
+  var res = await db.from(TABLE).delete().eq('id',id);
+  if (res.error) { setStatus('error','Delete failed'); setTimeout(function(){setStatus('idle','Ready');},3000); }
+  else { setStatus('success','Deleted'); setTimeout(function(){setStatus('idle','Ready');},2000); await loadAll(); }
 }
 
+// ── MONTHLY SUMMARY ───────────────────────
 function renderSummary() {
-  const monthVal = document.getElementById('summaryMonth').value;
-  const jobFilter = document.getElementById('summaryJob').value.trim().toLowerCase();
+  var monthVal  = document.getElementById('summaryMonth').value;
+  var jobFilter = document.getElementById('summaryJob').value.trim().toLowerCase();
   if (!monthVal) return;
-  const parts = monthVal.split('-');
-  const yr = parseInt(parts[0]), mo = parseInt(parts[1]);
-  let rows = allLogs.filter(r => {
+  var parts = monthVal.split('-');
+  var yr = parseInt(parts[0]), mo = parseInt(parts[1]);
+  var rows = allLogs.filter(function(r){
     if (!r.time_out) return false;
-    const d = new Date(r.work_date+'T00:00:00');
+    var d = new Date(r.work_date+'T00:00:00');
     return d.getFullYear()===yr && d.getMonth()+1===mo;
   });
-  if (jobFilter) rows = rows.filter(r => r.job_number.toLowerCase().includes(jobFilter));
-  const weekOf = d => { const day=new Date(d+'T00:00:00').getDate(); if(day<=7)return 0; if(day<=14)return 1; if(day<=21)return 2; return 3; };
-  const jobs = {};
-  rows.forEach(r => { if(!jobs[r.job_number])jobs[r.job_number]=[0,0,0,0]; jobs[r.job_number][weekOf(r.work_date)]+=+r.total_hours||0; });
-  const container = document.getElementById('summaryContainer');
-  if (!Object.keys(jobs).length) { container.innerHTML='<div class="empty"><div class="empty-icon">&#128202;</div><div>No completed data for '+monthVal+'</div></div>'; renderEmpTotals([]); return; }
-  const monthName = new Date(yr,mo-1,1).toLocaleString('en-US',{month:'long',year:'numeric'});
-  const weekLabels = ['Week 1 (1-7)','Week 2 (8-14)','Week 3 (15-21)','Week 4+ (22-end)'];
-  let grandWeeks=[0,0,0,0];
-  let html='<div class="font-display text-lg font-700 tracking-wide text-steel-300 uppercase mb-4">'+monthName+'</div>'+
-    '<table class="summary-grid w-full"><thead><tr><th>Job #</th>'+weekLabels.map(w=>'<th>'+w+'</th>').join('')+'<th>Total</th></tr></thead><tbody>';
+  if (jobFilter) rows = rows.filter(function(r){ return r.job_number.toLowerCase().includes(jobFilter); });
+  var weekOf = function(d){ var day=new Date(d+'T00:00:00').getDate(); if(day<=7)return 0; if(day<=14)return 1; if(day<=21)return 2; return 3; };
+  var jobs = {};
+  rows.forEach(function(r){ if(!jobs[r.job_number])jobs[r.job_number]=[0,0,0,0]; jobs[r.job_number][weekOf(r.work_date)]+=+r.total_hours||0; });
+  var container = document.getElementById('summaryContainer');
+  if (!Object.keys(jobs).length) {
+    container.innerHTML='<div class="empty"><div class="empty-icon">&#128202;</div><div>No completed data for '+monthVal+'</div></div>';
+    renderEmpTotals([]); return;
+  }
+  var monthName  = new Date(yr,mo-1,1).toLocaleString('en-US',{month:'long',year:'numeric'});
+  var weekLabels = ['Week 1 (1-7)','Week 2 (8-14)','Week 3 (15-21)','Week 4+ (22-end)'];
+  var grandWeeks = [0,0,0,0];
+  var html = '<div class="font-display text-lg font-700 tracking-wide text-steel-300 uppercase mb-4">'+monthName+'</div>'+
+    '<table class="summary-grid w-full"><thead><tr><th>Job #</th>'+weekLabels.map(function(w){return '<th>'+w+'</th>';}).join('')+'<th>Total</th></tr></thead><tbody>';
   Object.entries(jobs).sort().forEach(function(entry){
-    const job=entry[0], weeks=entry[1];
-    const tot=weeks.reduce(function(a,b){return a+b},0);
-    weeks.forEach(function(v,i){grandWeeks[i]+=v});
-    html+='<tr><td class="font-display font-600 text-amber-400">'+esc(job)+'</td>'+weeks.map(function(v){return '<td class="'+(v>0?'hours-cell':'')+'">'+(v>0?v.toFixed(2):'--')+'</td>'}).join('')+'<td class="hours-total">'+tot.toFixed(2)+'</td></tr>';
+    var job=entry[0], weeks=entry[1];
+    var tot=weeks.reduce(function(a,b){return a+b;},0);
+    weeks.forEach(function(v,i){grandWeeks[i]+=v;});
+    html+='<tr><td class="font-display font-600 text-amber-400">'+esc(job)+'</td>'+
+      weeks.map(function(v){return '<td class="'+(v>0?'hours-cell':'')+'">'+(v>0?v.toFixed(2):'--')+'</td>';}).join('')+
+      '<td class="hours-total">'+tot.toFixed(2)+'</td></tr>';
   });
-  const grandTotal=grandWeeks.reduce(function(a,b){return a+b},0);
-  html+='<tr style="border-top:2px solid #334e68"><td class="font-display font-700 text-steel-300 uppercase text-sm">TOTAL</td>'+grandWeeks.map(function(v){return '<td class="hours-total">'+(v>0?v.toFixed(2):'--')+'</td>'}).join('')+'<td class="hours-total" style="color:#f59e0b">'+grandTotal.toFixed(2)+'</td></tr></tbody></table>';
+  var grandTotal=grandWeeks.reduce(function(a,b){return a+b;},0);
+  html+='<tr style="border-top:2px solid #334e68"><td class="font-display font-700 text-steel-300 uppercase text-sm">TOTAL</td>'+
+    grandWeeks.map(function(v){return '<td class="hours-total">'+(v>0?v.toFixed(2):'--')+'</td>';}).join('')+
+    '<td class="hours-total" style="color:#f59e0b">'+grandTotal.toFixed(2)+'</td></tr></tbody></table>';
   container.innerHTML=html;
   renderEmpTotals(rows);
 }
 
 function renderEmpTotals(rows) {
-  const emps={};
-  rows.forEach(r => { if(!emps[r.employee_name])emps[r.employee_name]=0; emps[r.employee_name]+=+r.total_hours||0; });
-  const el=document.getElementById('empTotalsContainer');
+  var emps={};
+  rows.forEach(function(r){ if(!emps[r.employee_name])emps[r.employee_name]=0; emps[r.employee_name]+=+r.total_hours||0; });
+  var el=document.getElementById('empTotalsContainer');
   if(!Object.keys(emps).length){el.innerHTML='<div class="empty text-sm">No employee data</div>';return;}
   el.innerHTML='<table class="summary-grid w-full"><thead><tr><th>Employee</th><th>Total Hours</th></tr></thead><tbody>'+
-    Object.entries(emps).sort(function(a,b){return b[1]-a[1]}).map(function(e){return '<tr><td class="font-500 text-steel-200">'+esc(e[0])+'</td><td class="hours-cell">'+e[1].toFixed(2)+'</td></tr>'}).join('')+
-    '</tbody></table>';
+    Object.entries(emps).sort(function(a,b){return b[1]-a[1];}).map(function(e){
+      return '<tr><td class="font-500 text-steel-200">'+esc(e[0])+'</td><td class="hours-cell">'+e[1].toFixed(2)+'</td></tr>';
+    }).join('')+'</tbody></table>';
 }
 
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// ── HELPERS ───────────────────────────────
+function esc(s)     { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s) { return esc(s).replace(/'/g,'&#39;'); }
 
 function fmtTime(ts) {
   if (!ts) return '--';
-  const d=new Date(ts);
+  var d=new Date(ts);
   if(isNaN(d))return ts;
   return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
 }
 
+// ── BOOT ──────────────────────────────────
 init();
 </script>
 </body>
