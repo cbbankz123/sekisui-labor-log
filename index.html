@@ -130,7 +130,11 @@ td{padding:.5rem;border-bottom:1px solid #1a3550;color:#bcccdc}
 <div id="panel-summary" class="panel">
   <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:flex-end">
     <div><label>Month</label><input type="month" id="sumMonth" class="field" style="width:auto;margin-bottom:0" onchange="renderSummary()"/></div>
-    <div><label>Job Filter</label><input type="text" id="sumJob" class="field" placeholder="All jobs" oninput="renderSummary()" style="width:160px;margin-bottom:0"/></div>
+    <div style="position:relative"><label>Job Filter</label><input type="text" id="sumJob" class="field" placeholder="All jobs" style="width:160px;margin-bottom:0" autocomplete="off"
+      oninput="acFilter('sumJob','acSumJob',jobNumbers,'selectSumJob');renderSummary()"
+      onkeydown="acKey(event,'acSumJob',jobNumbers,'selectSumJob')"
+      onblur="setTimeout(function(){closeAC('acSumJob')},150)"/>
+    <ul id="acSumJob" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:50;background:#102a43;border:1px solid #334e68;border-top:none;border-radius:0 0 4px 4px;max-height:180px;overflow-y:auto;margin:0;padding:0;list-style:none"></ul></div>
   </div>
   <div id="sumContainer"></div>
   <label style="margin-top:1.5rem">Employee Totals</label>
@@ -163,6 +167,10 @@ function showTab(n){
   document.querySelectorAll('.tab-btn').forEach(function(b,i){
     b.classList.toggle('active',['clockin','active','logs','summary'][i]===n);
   });
+  // Always keep work date current when switching to clock-in tab
+  if(n==='clockin') document.getElementById('workDate').value=todayStr();
+  // Refresh data when switching tabs
+  loadAll();
 }
 
 function closeModal(){document.getElementById('coModal').style.display='none';}
@@ -191,6 +199,7 @@ function acKey(e,lid,src,fn){
 function closeAC(lid){document.getElementById(lid).style.display='none';}
 function selectEmp(n){document.getElementById('empName').value=n;closeAC('acEmp');checkOpen();}
 function selectJob(n){document.getElementById('jobNum').value=n;closeAC('acJob');}
+function selectSumJob(n){document.getElementById('sumJob').value=n;closeAC('acSumJob');renderSummary();}
 
 function checkOpen(){
   var name=document.getElementById('empName').value.trim().toLowerCase();
@@ -227,7 +236,9 @@ async function clockIn(){
   if(res.error){alert('Save failed: '+res.error.message);return;}
   document.getElementById('timeIn').value='';
   document.getElementById('alreadyWarn').style.display='none';
+  document.getElementById('empName').value='';
   await loadAll();
+  showTab('active');
 }
 
 var pendingRec=null;
@@ -255,6 +266,7 @@ async function confirmClockOut(){
   if(!pendingRec||!tv)return;
   closeModal();
   await doOut(pendingRec,tv);
+  pendingRec=null;
   await loadAll();
 }
 async function doOut(rec,outHM){
@@ -447,7 +459,10 @@ function renderEmpTot(rows){
 document.getElementById('dateLine').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 document.getElementById('workDate').value=todayStr();
 document.getElementById('sumMonth').value=todayStr().slice(0,7);
+document.getElementById('srchDate').value=todayStr();
 loadAll();
+// Auto-refresh every 60 seconds to keep active list current
+setInterval(function(){ loadAll(); }, 60000);
 </script>
 </body>
 </html>
